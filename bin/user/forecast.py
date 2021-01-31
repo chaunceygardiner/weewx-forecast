@@ -712,7 +712,7 @@ def mkdir_p(path):
    windGust   WIND GUST
    windChar   WIND CHAR
    clouds     CLOUDS | AVG CLOUDS  daypart.wxDayShort            clouds.all
-   pop        POP 12HR             daypart.precipChance
+   pop        POP 12HR             daypart.precipChance          pop
    qpf        QPF 12HR             daypart.qpf                   rain.3h
    qsf        SNOW 12HR            daypart.qpfSnow               snow.3h
    rain       RAIN
@@ -3002,6 +3002,15 @@ class OWMForecast(Forecast):
                     r['desc'] = period['main']['description']
                 if location is not None:
                     r['location'] = location
+                if 'pop' in period:
+                    r['pop'] = Forecast.str2float('pop',period['pop'],OWMForecast.KEY)*100
+                if 'main' in period and 'temp_min' in period['main']:
+                    r['tempMin'] = Forecast.str2float('pop',period['main']['temp_min'],OWMForecast.KEY)* 9.0 / 5.0 - 459.67
+                if 'main' in period and 'temp_max' in period['main']:
+                    r['tempMax'] = Forecast.str2float('pop',period['main']['temp_max'],OWMForecast.KEY)* 9.0 / 5.0 - 459.67
+                if 'visibility' in period:
+                    r['obvis'] = Forecast.str2float('pop',period['visibility'],OWMForecast.KEY) / 1609.344
+                
                 # FIXME pressure
                 # FIXME sea_level
                 # FIXME grnd_level
