@@ -19,9 +19,41 @@
 ##     show_obvis = 1
 
 <script>
+
+function HSVtoRGB(t) 
+{
+// Thankyou SO
+// https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+//
+    var h=t[0]/360;
+    var s= t[1];
+    var v= t[2];
+    
+	//console.log(t)
+	//console.log("H:"+h+ " s "+ s+" " +Math.floor(h * 6));
+    var r, g, b, i, f, p, q, t;
+    
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) 
+    {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return "rgb("+Math.round(r * 255)+","+Math.round(g * 255)+","+Math.round(b * 255)+")";
+    
+};
+
 function get_tint(Min,Max, units) 
 {
-	var Temp_Colors = [[00,00,101],[00,00,133],[00,49,178],[0,10,240],[00,223,125],[33,243,00],[193,187,00],[255,102,00],[255,00,00]];
+	var Temp_Colors = [[240.0,1.0,0.65],[239.0,.99,1.0],[223.0,.86,1.0],[237.0,.47,1.0],[154.0,0.99,.87],[112.0,1.0,.95],[59.0,1.0,.74],[25.0,1.0,1.0],[360.0,1.0,1.0]];
 	var MinTemp = -30;
 	var MaxTemp = 50;
 	var MaxIndex = (MaxTemp-MinTemp)/10;
@@ -43,7 +75,7 @@ function get_tint(Min,Max, units)
 	StartIndex=0;
 	  while (Temp < MinTemp) 
 	  {
-		Colors.push("rgb("+Temp_Colors[Index][0]+","+Temp_Colors[Index][1]+","+Temp_Colors[Index][2]+")");
+		Colors.push(HSVtoRGB( Temp_Colors[Index]));
 		//ret += ","+;
 		Temp += 10;
 	  }
@@ -65,10 +97,10 @@ function get_tint(Min,Max, units)
   {
 	f=(Min%10)/10;
 	var i = StartIndex;
-	r=Math.round(Temp_Colors[i-1][0]+(Temp_Colors[i][0]-Temp_Colors[i-1][0])/10*f);
-	g=Math.round(Temp_Colors[i-1][1]+(Temp_Colors[i][1]-Temp_Colors[i-1][1])/10*f);
-	b=Math.round(Temp_Colors[i-1][2]+(Temp_Colors[i][2]-Temp_Colors[i-1][2])/10*f);
-	StartColor="rgb("+r+","+g+","+b+")";
+	h=(Temp_Colors[i-1][0]+(Temp_Colors[i][0]-Temp_Colors[i-1][0])/10*f);
+	s=(Temp_Colors[i-1][1]+(Temp_Colors[i][1]-Temp_Colors[i-1][1])/10*f);
+    v=(Temp_Colors[i-1][2]+(Temp_Colors[i][2]-Temp_Colors[i-1][2])/10*f);
+	StartColor=HSVtoRGB([h,s,v]);
 	Colors.push(StartColor);
   }
   
@@ -77,21 +109,18 @@ function get_tint(Min,Max, units)
 	if (!StartColor)
 	{
 		var i = StartIndex;
-		r=Math.round(Temp_Colors[i][0]);
-		g=Math.round(Temp_Colors[i][1]);
-		b=Math.round(Temp_Colors[i][2]);
 		
-		StartColor="rgb("+r+","+g+","+b+")";
+		StartColor=HSVtoRGB(Temp_Colors[i]);
 		Colors.push(StartColor);
 	}
 	if (Max % 10 && Max < MaxTemp)
 	{
 		f=(Min%10)/10;
 		var i = EndIndex;
-		r=Math.round(Temp_Colors[i][0]+(Temp_Colors[i+1][0]-Temp_Colors[i][0])/10*f);
-		g=Math.round(Temp_Colors[i][1]+(Temp_Colors[i+1][1]-Temp_Colors[i][1])/10*f);
-		b=Math.round(Temp_Colors[i][2]+(Temp_Colors[i+1][2]-Temp_Colors[i][2])/10*f);		
-		Colors.push("rgb("+r+","+g+","+b+")");
+		h=(Temp_Colors[i][0]+(Temp_Colors[i+1][0]-Temp_Colors[i][0])/10*f);
+		s=(Temp_Colors[i][1]+(Temp_Colors[i+1][1]-Temp_Colors[i][1])/10*f);
+		v=(Temp_Colors[i][2]+(Temp_Colors[i+1][2]-Temp_Colors[i][2])/10*f);		
+		Colors.push(HSVtoRGB([h,s,v]));
 	}
 	else
 	{
@@ -102,17 +131,17 @@ function get_tint(Min,Max, units)
   {
 	  for (i= StartIndex; i<=EndIndex ; i++)
 	  {
-		Colors.push("rgb("+Temp_Colors[i][0]+","+Temp_Colors[i][1]+","+Temp_Colors[i][2]+")");
+		Colors.push(HSVtoRGB(Temp_Colors[i]));
 	  }
 	  
 	  if (Max % 10 && Max < MaxTemp)
 	  {
 		f=(Min%10)/10;
 		var i = EndIndex;
-		r=Math.round(Temp_Colors[i][0]+(Temp_Colors[i+1][0]-Temp_Colors[i][0])/10*f);
-		g=Math.round(Temp_Colors[i][1]+(Temp_Colors[i+1][1]-Temp_Colors[i][1])/10*f);
-		b=Math.round(Temp_Colors[i][2]+(Temp_Colors[i+1][2]-Temp_Colors[i][2])/10*f);		
-		Colors.push("rgb("+r+","+g+","+b+")");
+		h=(Temp_Colors[i][0]+(Temp_Colors[i+1][0]-Temp_Colors[i][0])/10*f);
+		s=(Temp_Colors[i][1]+(Temp_Colors[i+1][1]-Temp_Colors[i][1])/10*f);
+		v=(Temp_Colors[i][2]+(Temp_Colors[i+1][2]-Temp_Colors[i][2])/10*f);		
+		Colors.push(HSVtoRGB([h,s,v]));
 	  }
   }  
   
@@ -124,7 +153,7 @@ function get_tint(Min,Max, units)
 
 // Tests
 console.log(get_tint(0,0));
-console.log(get_tint(11,14));
+console.log(get_tint(7,14));
 console.log(get_tint(6,11));
 console.log(get_tint(6,21));
 
