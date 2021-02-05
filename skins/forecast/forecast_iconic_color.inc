@@ -53,9 +53,9 @@ function HSVtoRGB(t)
 
 function get_tint(Min,Max, units) 
 {
-	var Temp_Colors = [[240.0,1.0,0.65],[239.0,.99,1.0],[223.0,.86,1.0],[237.0,.47,1.0],[154.0,0.99,.87],[112.0,1.0,.95],[59.0,1.0,.74],[25.0,1.0,1.0],[360.0,1.0,1.0]];
-	var MinTemp = -30;
-	var MaxTemp = 50;
+	var Temp_Colors = [[240.0,1.0,1],[239.0,1,1.0],[218.0,1,1.0],[200.0,.47,1.0],[180.0,1,1],[140.0,1.0,1],[100.0,1.0,1],[40.0,1.0,1.0],[0.0,1.0,1.0]];
+	var MinTemp = -40;
+	var MaxTemp = 40;
 	var MaxIndex = (MaxTemp-MinTemp)/10;
 	var Colors=[];
   if(units === undefined) units = 'degC';
@@ -82,9 +82,9 @@ function get_tint(Min,Max, units)
   }
   else
   {
-	StartIndex = (30+Min -( Min %10 ))/10;
+	StartIndex = (-MinTemp+Min -( Min %10 ))/10;
   }
-  EndIndex = (30+Max - (Max % 10))/10;
+  EndIndex = (-MinTemp+Max - (Max % 10))/10;
   
   if (EndIndex >= MaxIndex)
   {
