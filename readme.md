@@ -84,10 +84,10 @@ Iconic Color strip sample :
 
 - [Forecast]
   - [[NWS]]
-      lid = MAZ014                 # specify a location identifier
-      foid = BOX                   # specify a forecast office identifier
+    - lid = MAZ014                 | specify a location identifier
+    - foid = BOX                   | specify a forecast office identifier
   - [[WU]]
-      api_key = XXXXXXXXXXXXXXXX   # specify a weather underground api_key
+      api_key = XXXXXXXXXXXXXXXX   | specify a weather underground api_key
        A location may be specified.  If it isn't, your stations lat/long
        will be used.
 
@@ -121,14 +121,17 @@ Iconic Color strip sample :
 
 1. restart weewx:
 
+```sh
 sudo /etc/init.d/weewx stop
 sudo /etc/init.d/weewx start
+
+```
 
 This will result in a skin called forecast with web pages that illustrate how
 to use the forecasts.  See comments in forecast.py for detailed customization
 options.
 
-## Credits:
+## Credits
 
 Icons were derived from Adam Whitcroft's climacons.
 WU Icons : <https://docs.google.com/document/d/1eKCnKXI9xnoMGRRzOL1xPCBihNV2rOet08qpE_gArAY/edit>
