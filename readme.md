@@ -50,7 +50,7 @@ Iconic Color strip sample :
 - If you want WU forecasts, obtain an api_key:
     <http://www.wunderground.com/weather/api/>
 
--* If you want OWM forecasts, obtain an api_key:
+- If you want OWM forecasts, obtain an api_key:
   <http://openweathermap.org/appid>
 
 - If you want UK Met Office forecasts, obtain an api_key:
@@ -84,28 +84,24 @@ Iconic Color strip sample :
 
 - [Forecast]
   - [[NWS]]
-    - lid = MAZ014                 | specify a location identifier
-    - foid = BOX                   | specify a forecast office identifier
+    - lid = MAZ014                  specify a location identifier
+    - foid = BOX                    specify a forecast office identifier
   - [[WU]]
-      api_key = XXXXXXXXXXXXXXXX   | specify a weather underground api_key
-       A location may be specified.  If it isn't, your stations lat/long
-       will be used.
+    - api_key = XXXXXXXXXXXXXXXX    specify a weather underground api_key  
+      - A location may be specified.  If it isn't, your stations lat/long will be used.
 
-       To specify the location for which to generate a forecast, one can specify
-       the Geocode (lat, long), IATA Code, ICAO Code, Place ID or Postal Key.
+      - To specify the location for which to generate a forecast, one can specify the Geocode (lat, long), IATA Code, ICAO Code, Place ID or Postal Key.
 
-       These options are listed here:
-       <https://docs.google.com/document/d/1_Zte7-SdOjnzBttb1-Y9e0Wgl0_3tah9dSwXUyEA3-c/>
+      - These options are listed here:
+        - <https://docs.google.com/document/d/1_Zte7-SdOjnzBttb1-Y9e0Wgl0_3tah9dSwXUyEA3-c/>
 
-       If none of the following is specified, the station's latititude and longitude
-       will be used.  If more than one is specified, the first will be used according
-       to the order listed here.
+        - If none of the following is specified, the station's latititude and longitude will be used.  If more than one is specified, the first will be used according to the order listed here.
 
-       geocode = "33.74,-84.39"
-       iataCode = DEN
-       icaoCode = KDEN
-       placeid = 327145917e06d09373dd2760425a88622a62d248fd97550eb4883737d8d1173b
-       postalKey = 81657:US
+        - geocode = "33.74,-84.39"
+        - iataCode = DEN
+        - icaoCode = KDEN
+        - placeid = 327145917e06d09373dd2760425a88622a62d248fd97550eb4883737d8d1173b
+        - postalKey = 81657:US
   - [[OWM]]
       api_key = XXXXXXXXXXXXXXXX   # specify an open weathermap api_key
   - [[UKMO]]
