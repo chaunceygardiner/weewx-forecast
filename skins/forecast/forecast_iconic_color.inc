@@ -53,7 +53,7 @@ function HSVtoRGB(t)
 
 function get_tint(Min,Max, units) 
 {
-	var Temp_Colors = [[240.0,1.0,1],[239.0,1,1.0],[218.0,1,1.0],[200.0,.47,1.0],[180.0,1,1],[140.0,1.0,1],[100.0,1.0,1],[40.0,1.0,1.0],[0.0,1.0,1.0]];
+	var Temp_Colors = [[240.0,1.0,1],[239.0,1,1.0],[220.0,1,1.0],[210.0,.47,1.0],[180.0,1,1],[140.0,1.0,1],[100.0,1.0,1],[40.0,1.0,1.0],[0.0,1.0,1.0]];
 	var MinTemp = -40;
 	var MaxTemp = 40;
 	var MaxIndex = (MaxTemp-MinTemp)/10;
@@ -251,7 +251,7 @@ console.log(get_tint(6,21));
   <tr>
     <td class='col-outlook'>
   #if $summary.clouds is not None
-  #set $simg = 'icons/' + $summary.clouds + '.png'
+  #set $simg = 'icons/' + "0"+str($summary.clouds)[-1:2] + '.png'
       <img class='outlook-img' src='$simg' alt='$summary.clouds' title='$forecast.label("Weather", $summary.clouds)' />
   #end if
     </td>
