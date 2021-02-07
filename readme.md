@@ -103,17 +103,17 @@ Iconic Color strip sample :
         - placeid = 327145917e06d09373dd2760425a88622a62d248fd97550eb4883737d8d1173b
         - postalKey = 81657:US
   - [[OWM]]
-      api_key = XXXXXXXXXXXXXXXX   # specify an open weathermap api_key
+    - api_key = XXXXXXXXXXXXXXXX   # specify an open weathermap api_key
   - [[UKMO]]
-      api_key = XXXXXXXXXXXXXXXX   # specify a UK met office api_key
-      location = 2337              # specify code for UK location
+    - api_key = XXXXXXXXXXXXXXXX   # specify a UK met office api_key
+    - location = 2337              # specify code for UK location
   - [[Aeris]]
-      client_id = XXXXXXXXXXXXXXXX      # specify client identifier
-      client_secret = XXXXXXXXXXXXXXXX  # specify client secret key
+    - client_id = XXXXXXXXXXXXXXXX      # specify client identifier
+    - client_secret = XXXXXXXXXXXXXXXX  # specify client secret key
   - [[DS]]
-      api_key = XXXXXXXXXXXXXXXX   # specify a dark sky api_key
+    -api_key = XXXXXXXXXXXXXXXX   # specify a dark sky api_key
   - [[XTide]]
-      location = Boston            # specify a location
+    - location = Boston            # specify a location
 
 1. restart weewx:
 
