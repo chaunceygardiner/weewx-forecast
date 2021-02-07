@@ -35,8 +35,8 @@ from left to right.  The forecast_strip.inc file is a cheetah template designed
 to be included in other templates.  At the beginning of the file is a list of
 variables that determine which forecast data will be displayed.
 
-Iconic color strip adds color gradient to the temperature bar. Weather outlook icons have been replaced the current official WU ones downloaded from WU API documentation.
-<https://docs.google.com/document/d/1eKCnKXI9xnoMGRRzOL1xPCBihNV2rOet08qpE_gArAY/edit>
+Iconic color strip adds color gradient to the temperature bar. 
+Weather outlook icons have been replaced with the current official WU ones downloaded from WU API documentation.
 
 Iconic Color strip sample :
 
@@ -135,3 +135,4 @@ options.
 ## Credits:
 
 Icons were derived from Adam Whitcroft's climacons.
+WU Icons : <https://docs.google.com/document/d/1eKCnKXI9xnoMGRRzOL1xPCBihNV2rOet08qpE_gArAY/edit>
