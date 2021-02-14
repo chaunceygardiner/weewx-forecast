@@ -78,14 +78,19 @@ Iconic Color strip sample :
 
 1. run the installer:
 
-    wee_extension --install weewx-forecast-3.4.0b11.zip
+    wee_extension --install weewx-forecast-3.4.0b12.zip
 
 2. modify weewx.conf for your location:
 
 - [Forecast]
   - [[NWS]]
-    - lid = MAZ014                  specify a location identifier
-    - foid = BOX                    specify a forecast office identifier
+  
+| Parameter | Description |
+| --- | --- |
+|lid = MAZ014 | specify a location identifier |
+| foid = BOX | specify a forecast office identifier |
+| lid_desc = Framingham-Middlesex MA  | (optional) specify a lid description for cases where the lid is repeated in the forecast file and the user does not want the first entry for that lid. |
+| | Just omit this entry entirely unless you have examined the forecast file and know the description of the repeated lid entry that you want to use. |
   - [[WU]]
     - api_key = XXXXXXXXXXXXXXXX    specify a weather underground api_key  
       - A location may be specified.  If it isn't, your stations lat/long will be used.
