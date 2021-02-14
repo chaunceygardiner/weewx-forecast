@@ -113,7 +113,11 @@ Configuration
         # to your location.
 
         # National Weather Service location identifier
-        lid = MAZ014
+        lid = MAZ005
+
+        # lid_desc disambiguates when a lid is listed more than once in the document.
+        # If lid_desc is not specified, the first entry for the specified lid is used.
+        lid_desc = Lowell-Middlesex MA
 
         # National Weather Service forecast office identifier
         foid = BOX
@@ -555,7 +559,7 @@ import weeutil.weeutil
 from weewx.engine import StdService
 from weewx.cheetahgenerator import SearchList
 
-VERSION = "3.4.0b11"
+VERSION = "3.4.0b12"
 
 if weewx.__version__ < "4":
     raise weewx.UnsupportedFeature(
@@ -1663,6 +1667,7 @@ class NWSForecast(Forecast):
         self.url = d.get('url', NWS_DEFAULT_PFM_URL)
         self.max_tries = int(d.get('max_tries', 3))
         self.lid = d.get('lid', None)
+        self.lid_desc = d.get('lid_desc', None)
         self.foid = d.get('foid', None)
 
         errmsg = []
@@ -1676,8 +1681,8 @@ class NWSForecast(Forecast):
             logerr('%s: forecast will not be run' % NWS_KEY)
             return
 
-        loginf('%s: interval=%s max_age=%s lid=%s foid=%s' %
-               (NWS_KEY, self.interval, self.max_age, self.lid, self.foid))
+        loginf('%s: interval=%s max_age=%s lid=%s lid_desc=%s foid=%s' %
+               (NWS_KEY, self.interval, self.max_age, self.lid, self.lid_desc, self.foid))
         self._bind()
 
     def get_forecast(self, dummy_event):
@@ -1689,10 +1694,14 @@ class NWSForecast(Forecast):
             return None
         if self.save_raw:
             self.save_raw_forecast(text, basename='nws-raw')
-        matrix = NWSParseForecast(text, self.lid)
+        matrix = NWSParseForecast(text, self.lid, self.lid_desc)
         if matrix is None:
-            logerr('%s: no PFM found for %s in forecast from %s' %
-                   (NWS_KEY, self.lid, self.foid))
+            if self.lid_desc is None:
+                logerr('%s: no PFM found for %s in forecast from %s' %
+                       (NWS_KEY, self.lid, self.foid))
+            else:
+                logerr('%s: no PFM found for %s/%s in forecast from %s' %
+                       (NWS_KEY, self.lid, self.lid_desc, self.foid))
             return None
         logdbg('%s: forecast matrix: %s' % (NWS_KEY, matrix))
         records = NWSProcessForecast(self.foid, self.lid, matrix)
@@ -1762,7 +1771,7 @@ def NWSDownloadForecast(foid, url=NWS_DEFAULT_PFM_URL, max_tries=3):
         logerr('%s: failed to download forecast' % NWS_KEY)
     return None
 
-def NWSExtractLocation(text, lid):
+def NWSExtractLocation(text, lid, lid_desc=None):
     """Extract a single location from a US National Weather Service PFM."""
 
     alllines = text.splitlines()
@@ -1774,17 +1783,20 @@ def NWSExtractLocation(text, lid):
         elif lines is not None:
             if line.startswith('$$'):
                 break
+            elif lines is not None and len(lines) == 1 and lid_desc is not None and line != lid_desc:
+                # It's not the reight lid_desc.  Keep looking.
+                lines = None
             else:
                 lines.append(line)
     return lines
 
-def NWSParseForecast(text, lid):
+def NWSParseForecast(text, lid, lid_desc=None):
     """Parse a United States National Weather Service point forcast matrix.
     Save it into a dictionary with per-hour elements for wind, temperature,
     etc. extracted from the point forecast.
     """
 
-    lines = NWSExtractLocation(text, lid)
+    lines = NWSExtractLocation(text, lid, lid_desc)
     if lines is None:
         return None
 

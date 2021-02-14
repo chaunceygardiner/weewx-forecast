@@ -1,3 +1,16 @@
+3.4.0b12
+* NWS foid: BOX, lid: MAZ005 has multiple entries (actually, this is common)
+  the forecast plugin picks the first one found.  To pick a different one,
+  specify the location text as the lid_desc parameter.
+  [Forecast]
+      [[NWS]]
+          lid = MAZ005
+          lid_desc = Lowell-Middlesex MA
+          foid = BOX
+  Note: This is not required and, to speicify it, you need to examine
+        the report returened from NWS.  Most users should ignore this
+        change.
+
 3.4.0b11
 * Add missing freezing rain icon.
 * Fix for WU tempMin/tempMax.
