@@ -185,6 +185,9 @@ console.log(get_tint(6,21));
 
 #set $local_settings = dict()
 
+#set $WU_ICON_LABELS = ["Tornado","Tropical Storm","Hurricane","Strong Storms","Thunderstorms","Rain / Snow","Rain / Sleet","Wintry Mix","Freezing Drizzle","Drizzle","Freezing Rain","Showers","Rain","Flurries","Snow Showers","Blowing / Drifting Snow","Snow","Hail","Sleet","Blowing Dust / Sandstorm","Foggy","Haze","Smoke","Breezy","Windy","Frigid / Ice Crystals","Cloudy","Mostly Cloudy","Mostly Cloudy","Partly Cloudy","Partly Cloudy","Clear","Sunny","Fair / Mostly Clear","Fair / Mostly Sunny","Mixed Rain and Hail","Hot","Isolated Thunderstorms","Scattered Thunderstorms","Scattered Showers","Heavy Rain","Scattered Snow Showers","Heavy Snow","Blizzard","Not Available (N/A)","Scattered Showers","Scattered Snow Showers","Scattered Thunderstorms"]
+
+
 ## First look for values from skin.conf or weewx.conf
 #if $varExists('Extras') and $varExists('Extras.forecast_iconic_settings')
   #for $sv in $Extras.forecast_iconic_settings.keys()
@@ -251,8 +254,8 @@ console.log(get_tint(6,21));
   <tr>
     <td class='col-outlook'>
   #if $summary.clouds is not None
-  #set $simg = 'icons/' + "0"+str($summary.clouds)[-1:2] + '.png'
-      <img class='outlook-img' src='$simg' alt='$summary.clouds' title='$forecast.label("Weather", $summary.clouds)' />
+  #set $simg = 'icons/' + str($summary.clouds) + '.png'
+      <img class='outlook-img' src='$simg' alt='$WU_ICON_LABELS[int($summary.clouds)]' title='$WU_ICON_LABELS[int($summary.clouds)]' />
   #end if
     </td>
     <td class='col-day'>
