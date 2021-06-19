@@ -2580,6 +2580,7 @@ class WUForecast(Forecast):
                             r['tstms'] = WUForecast.tstms_dict[thunder_index]
                         # Look for other precip in iconCode
                         icon_code = fc['daypart'][0]['iconCode'][daypart_index]
+                        r['clouds'] = icon_code
                         #if icon_code == 4 or icon_code == 37 or icon_code == 38 or icon_code == 47:
                         #    if precip_chance > 20:
                         #        r['tstms'] = WUForecast.code_from_precip_chance(precip_chance)
