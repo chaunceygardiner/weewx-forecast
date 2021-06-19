@@ -266,12 +266,12 @@ console.log(get_tint(6,21));
 			#set $WUTitle=$summary.clouds
 			
 			#if $WUTitle is not None and $WUTitle.isdigit()
-				#set $WUTitle=int($WUTitle)
+				#set $WUTitle=$WU_ICON_LABELS[int($summary.clouds)]
 			#else
 				#set $WUTitle='N/A'
 			#end if
 
-			<img class='outlook-img' src='$RelFolder$simg' alt='$WU_ICON_LABELS[int($summary.clouds)]' title='$WU_ICON_LABELS[int($summary.clouds)]' />
+			<img class='outlook-img' src='$RelFolder$simg' alt='$WUTitle' title='' />
 		#end if
 		</td>
 		<td class='col-day'>
