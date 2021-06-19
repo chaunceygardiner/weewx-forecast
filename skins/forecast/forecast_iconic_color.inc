@@ -62,12 +62,16 @@ function get_tint(Min,Max, units)
 	var MaxTemp = 40;
 	var MaxIndex = (MaxTemp-MinTemp)/10;
 	var Colors=[];
-  if(units === undefined) units = 'degC';
-  if (units === 'degF')
-  {
-	Min=(Min-32)*5/9;
-	Max=(Max-32)*8/9;
-  }
+
+	Min = parseInt(Min,10);
+	Max = parseInt(Max,10);	
+	
+	if(units === undefined) units = 'degC';
+	if (units === 'degF')
+	{
+		Min=(Min-32)*5/9;
+		Max=(Max-32)*8/9;
+	}
   
   var ret="linear-gradient(to right";
    var Temp = MinTemp;
@@ -285,7 +289,7 @@ console.log(get_tint(6,21));
 		  <div class='temp'>$summary.tempMin.nolabel('%.0f')</div>
 		  <div Id='Temp $Id' class='temp temp-range' style='width:${range_width}px'>&nbsp;
 		  <script>
-			document.getElementById("Temp $Id").style.background=  get_tint ($summary.tempMin.nolabel('%.0f'),$summary.tempMax.nolabel('%.0f'));
+			document.getElementById("Temp $Id").style.background=  get_tint ("$summary.tempMin.nolabel('%.0f')","$summary.tempMax.nolabel('%.0f')");
 		  </script>
 		  </div>
 		  <div class='temp'>$summary.tempMax.nolabel('%.0f')</div>
