@@ -25,7 +25,10 @@
 <div class='location'>$station.location</div>
 <div class='current'>$current.outTemp</div>
 
-#include "forecast_iconic_color.inc"
-
+#try
+	#include "forecast_iconic_color.inc"
+#except
+	$sys.exc_info()[1]
+#end try
 </body>
 </html>

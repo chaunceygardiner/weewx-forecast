@@ -18,6 +18,10 @@
 ##     show_precip = 1
 ##     show_obvis = 1
 
+#if not $varExists('RelFolder')
+	#set $RelFolder = "./"
+#end if
+
 <script>
 
 function HSVtoRGB(t) 
@@ -267,7 +271,7 @@ console.log(get_tint(6,21));
 				#set $WUTitle='N/A'
 			#end if
 
-			<img class='outlook-img' src='$simg' alt='$WU_ICON_LABELS[int($summary.clouds)]' title='$WU_ICON_LABELS[int($summary.clouds)]' />
+			<img class='outlook-img' src='$RelFolder$simg' alt='$WU_ICON_LABELS[int($summary.clouds)]' title='$WU_ICON_LABELS[int($summary.clouds)]' />
 		#end if
 		</td>
 		<td class='col-day'>
@@ -294,7 +298,7 @@ console.log(get_tint(6,21));
 		<td class='col-precip'>
 			#for $k in $summary.precip
 				#set $precip_img = 'icons/' + $k + '.png'
-		  <img class='precip-img' src='$precip_img' alt='$k' title='$forecast.label('Weather', $k)' />
+		  <img class='precip-img' src='$RelFolder$precip_img' alt='$k' title='$forecast.label('Weather', $k)' />
 			#end for
 		</td>
 		#end if
@@ -303,7 +307,7 @@ console.log(get_tint(6,21));
 		<td class='col-obvis'>
 			#for $k in $summary.obvis
 				#set $obvis_img = 'icons/' + $k + '.png'
-		  <img class='obvis-img' src='$obvis_img' alt='$k' title='$forecast.label('Weather', $k)' />
+		  <img class='obvis-img' src='$RelFolder$obvis_img' alt='$k' title='$forecast.label('Weather', $k)' />
 			#end for
 		</td>
 		#end if
