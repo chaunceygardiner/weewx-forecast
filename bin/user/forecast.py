@@ -716,7 +716,7 @@ def mkdir_p(path):
    windGust   WIND GUST
    windChar   WIND CHAR
    clouds     CLOUDS | AVG CLOUDS  daypart.wxDayShort            clouds.all
-   pop        POP 12HR             daypart.precipChance
+   pop        POP 12HR             daypart.precipChance          pop
    qpf        QPF 12HR             daypart.qpf                   rain.3h
    qsf        SNOW 12HR            daypart.qpfSnow               snow.3h
    rain       RAIN
@@ -2580,6 +2580,7 @@ class WUForecast(Forecast):
                             r['tstms'] = WUForecast.tstms_dict[thunder_index]
                         # Look for other precip in iconCode
                         icon_code = fc['daypart'][0]['iconCode'][daypart_index]
+                        r['clouds'] = icon_code
                         #if icon_code == 4 or icon_code == 37 or icon_code == 38 or icon_code == 47:
                         #    if precip_chance > 20:
                         #        r['tstms'] = WUForecast.code_from_precip_chance(precip_chance)
@@ -3014,6 +3015,15 @@ class OWMForecast(Forecast):
                     r['desc'] = period['main']['description']
                 if location is not None:
                     r['location'] = location
+                if 'pop' in period:
+                    r['pop'] = Forecast.str2float('pop',period['pop'],OWMForecast.KEY)*100
+                if 'main' in period and 'temp_min' in period['main']:
+                    r['tempMin'] = Forecast.str2float('pop',period['main']['temp_min'],OWMForecast.KEY)* 9.0 / 5.0 - 459.67
+                if 'main' in period and 'temp_max' in period['main']:
+                    r['tempMax'] = Forecast.str2float('pop',period['main']['temp_max'],OWMForecast.KEY)* 9.0 / 5.0 - 459.67
+                if 'visibility' in period:
+                    r['obvis'] = Forecast.str2float('pop',period['visibility'],OWMForecast.KEY) / 1609.344
+                
                 # FIXME pressure
                 # FIXME sea_level
                 # FIXME grnd_level
