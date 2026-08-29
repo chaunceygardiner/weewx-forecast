@@ -8,6 +8,9 @@
 from __future__ import with_statement
 from __future__ import absolute_import
 from __future__ import print_function
+import importlib
+import importlib.util
+import io
 import json
 import math
 import os
@@ -17,6 +20,8 @@ import time
 import unittest
 
 import configobj
+import weecfg.extension
+import weeutil.config
 
 
 import weewx
@@ -2222,6 +2227,151 @@ $ts $a.sunrise $a.sunset $gmstr
         fc = ForecastTest.FailingForecast(ValueError('download failed'))
         fc.do_forecast(None)  # must not raise
         self.assertFalse(fc.updating)
+
+
+class InstallerConfigTest(unittest.TestCase):
+    """install.py's configuration stanza.  It is only ever read on a fresh
+    `weectl extension install`: weecfg merges it with conditional_merge,
+    which fills in absent keys and never rewrites an existing weewx.conf.  A
+    mistake here is therefore invisible on every station that already has the
+    extension, and permanent on every station that installs it next."""
+
+    REPO_DIR = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))))
+
+    @classmethod
+    def install_module(cls):
+        """install.py, loaded as a module.  Loading it needs weecfg.extension
+        imported first: that module aliases itself as 'setup' in sys.modules
+        for installers written against the pre-5.0 name."""
+        importlib.import_module('weecfg.extension')  # registers the alias
+        spec = importlib.util.spec_from_file_location(
+            'forecast_install', os.path.join(cls.REPO_DIR, 'install.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_version_is_in_lockstep(self):
+        """The version lives in three places and they must agree: install.py's
+        version=, VERSION in forecast.py, and [Extras] version in
+        skins/forecast/skin.conf.  A release that bumps two of the three ships
+        a skin reporting the wrong version, which nothing else would catch."""
+        installer_version = self.install_module().ForecastInstaller()['version']
+        skin = configobj.ConfigObj(
+            os.path.join(self.REPO_DIR, 'skins', 'forecast', 'skin.conf'),
+            encoding='utf-8', file_error=True)
+        self.assertEqual(installer_version, forecast.VERSION)
+        self.assertEqual(skin['Extras']['version'], forecast.VERSION)
+
+    def test_no_section_of_the_stanza_is_empty(self):
+        """Every section must keep at least one live key.  Comment an option
+        out and it leaves the parsed stanza, so a section whose only option is
+        commented out becomes empty -- and its comment block then attaches to
+        whatever key comes next.  Where that is a SIBLING subsection, as
+        [[NWS]] is to [[Zambretti]], the block is written one level out, at the
+        parent's indent: a user who uncomments an assignment there sets the
+        option on [Forecast], where nothing reads it, and neither weewx nor
+        this extension says a word.
+
+        The indent check in the test below cannot see that, because ConfigObj
+        writes the block at exactly the indent of the key it moved to -- the
+        two agree, which is the whole problem.  Emptiness is what shows it."""
+        def check(section, path):
+            self.assertTrue(
+                section.scalars or section.sections,
+                '%s has no live keys left -- every option in it is commented '
+                'out, so its comments will be written against the next '
+                'section instead' % path)
+            for name in section.sections:
+                check(section[name], '%s [%s]' % (path, name))
+
+        stanza = self.install_module().ForecastInstaller()['config']
+        for name in stanza.sections:
+            check(stanza[name], '[%s]' % name)
+
+    def test_merged_stanza_keeps_every_comment_in_its_own_section(self):
+        """The whole point of writing the stanza as text is that its comments
+        reach the user's weewx.conf.  Two ways they silently do not, both of
+        which have shipped in other extensions:
+
+        - conditional_merge copies a key's comments only when it ADDS the key.
+          A block attached to a key the target already has is dropped
+          entirely, not misplaced -- so a block left trailing after a
+          section's last key, where it attaches to whatever section comes
+          next, vanishes on exactly the fresh installs it was written for.
+        - ConfigObj writes a comment block at the indent of the key it is
+          attached to.  If that key is shallower than the block's own section,
+          the block is dedented out of it, and an assignment inside the block
+          then reads as an option on the wrong section.
+
+        Neither shows up as an error, so put the stanza through the path
+        weectl actually takes -- weecfg.extension._inject_config copies it
+        (deep_copy for a Section, a shallow dict() on WeeWX 4.0-4.4) and
+        prepends HTML_ROOT before merging, and it is those copies that can
+        drop comments -- then check the output: every comment line survives,
+        and each sits at the indent of the live line that follows it."""
+        module = self.install_module()
+        stanza = module.ForecastInstaller()['config']
+        # Mirror _inject_config: copy first, then prepend_path, then merge.
+        # Merging the stanza object itself would skip the two steps that carry
+        # the risk.
+        stanza = weeutil.config.deep_copy(stanza)
+        weecfg.extension.ExtensionEngine.prepend_path(
+            stanza, 'HTML_ROOT', 'public_html')
+        # A REALISTIC target: one that already has the sections this stanza
+        # merges into.  A virgin file cannot show the dropped-comment case,
+        # because there is no pre-existing key for a block to attach to.
+        target = configobj.ConfigObj(io.StringIO("""
+[DataBindings]
+    [[wx_binding]]
+        database = archive_sqlite
+[Databases]
+    [[archive_sqlite]]
+        database_name = weewx.sdb
+[StdReport]
+    HTML_ROOT = public_html
+    [[SeasonsReport]]
+        skin = Seasons
+[Engine]
+    [[Services]]
+        archive_services = weewx.engine.StdArchive
+"""), encoding='utf-8')
+        weeutil.config.conditional_merge(target, stanza)
+        buf = io.BytesIO()
+        target.write(buf)
+        merged = buf.getvalue().decode('utf-8').splitlines()
+
+        def comment_lines(lines):
+            return [line for line in lines if line.strip().startswith('#')]
+
+        written = comment_lines(module.CONFIG.splitlines())
+        self.assertTrue(written, 'the stanza has no comments at all')
+        # Sorted, not in order: the merged file lists the sections the target
+        # already had before the ones the stanza appends, so the blocks come
+        # out in a different order than they are written here.
+        self.assertEqual(sorted(line.strip() for line in comment_lines(merged)),
+                         sorted(line.strip() for line in written),
+                         'comment lines were dropped by the merge')
+
+        def indent(line):
+            return len(line) - len(line.lstrip())
+
+        for i, line in enumerate(merged):
+            if not line.strip().startswith('#'):
+                continue
+            following = next((nxt for nxt in merged[i + 1:]
+                              if nxt.strip() and not nxt.strip().startswith('#')),
+                             None)
+            self.assertIsNotNone(
+                following, 'comment block at the end of the file: %r' % line)
+            self.assertEqual(
+                indent(line), indent(following),
+                'comment %r is written at indent %d but the line it is '
+                'attached to, %r, is at indent %d -- move the block above a '
+                'live key in its own section'
+                % (line.strip(), indent(line), following.strip(),
+                   indent(following)))
+
 
 # use this to run individual tests while debugging
 def suite(testname):

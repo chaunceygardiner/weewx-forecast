@@ -3,7 +3,132 @@
 # Copyright 2020-2026 John A Kline (john@johnkline.com)
 # Distributed under the terms of the GNU Public License (GPLv3)
 
+from io import StringIO
+
+import configobj
+
 from weecfg.extension import ExtensionInstaller
+
+# Written as weewx.conf text rather than a dict so that the stanza weectl
+# merges into a fresh weewx.conf arrives with its comments: ConfigObj keeps
+# them, a dict has nowhere to put them.
+#
+# Every option here is written LIVE.  Most are names another section has to
+# agree with, or placeholders the user must replace, so there is nothing a
+# later release could improve by leaving them commented out.  The one
+# exception is [[Zambretti]] hemisphere, which IS a pure default: it stays
+# live because it is that section's only key.  Commenting it out would empty
+# the section, and ConfigObj would then attach its comment block to the
+# sibling [[NWS]] header, at the parent's indent -- where uncommenting the
+# assignment would set hemisphere on [Forecast], which nothing reads.
+#
+# The other options each source accepts are listed, with their defaults, in
+# the comments at the top of bin/user/forecast.py; add them here only to
+# override a default.
+#
+# Comments are written INSIDE their section, never above a top-level header:
+# WeeWX 4.0 through 4.4 shallow-copy the installer's config and drop the
+# top-level comments, while comments inside a section survive on every
+# version.  A commented line is also attached to the key that FOLLOWS it, so
+# each block sits directly above the live key it describes, and no block is
+# left trailing after a section's last key: there it would attach to whatever
+# comes next, which on a fresh install is a section the user's file already
+# has -- and a comment on a key that is already present is dropped, not
+# merged.
+CONFIG = """
+[Forecast]
+    # The installer appends all nine forecast services to archive_services in
+    # [Engine] [[Services]].  A source whose credentials below are still
+    # placeholders logs an error naming what is missing when weewx starts and
+    # then does nothing at all -- it never binds, so the error does not
+    # repeat.  Remove the sources you do not use from that list if you would
+    # rather not see those startup errors.
+    #
+    # Each source accepts more options than are set here; they are listed,
+    # with their defaults, in the comments at the top of bin/user/forecast.py.
+    #
+    # The database in which to record forecast information, defined in the
+    # 'DataBindings' and 'Databases' sections that this installer also writes.
+    data_binding = forecast_binding
+
+    [[XTide]]
+        # A location the xtide 'tide' program knows; list them with 'tide -ml'.
+        location = "INSERT_LOCATION_HERE (e.g., Boston)"
+
+    [[Zambretti]]
+        # Calculated from the station's own pressure trend; no credentials
+        # needed.  Set to SOUTH for a southern hemisphere station.
+        hemisphere = NORTH
+
+    [[NWS]]
+        # US National Weather Service location (lid) and forecast office
+        # (foid) identifiers.  Find your foid, then request a point forecast
+        # matrix in a browser and scan it for your lid:
+        #     http://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
+        lid = "INSERT_LOCATION_ID_HERE (e.g., MAZ014)"
+        foid = "INSERT_FORECAST_OFFICE_ID_HERE (e.g., BOX)"
+
+    [[WU]]
+        # Weather Underground API key:
+        #     http://www.wunderground.com/weather/api/
+        api_key = INSERT_WU_API_KEY_HERE
+
+    [[OWM]]
+        # OpenWeatherMap API key:
+        #     http://openweathermap.org/appid
+        api_key = INSERT_OWM_API_KEY_HERE
+
+    [[UKMO]]
+        # UK Met Office API key.  It must be a key from the Met Office
+        # Datahub service; sign up there for global spot data:
+        #     https://www.metoffice.gov.uk/services/data/met-office-weather-datahub
+        api_key = INSERT_UKMO_API_KEY_HERE
+
+    [[Aeris]]
+        # AerisWeather: create an account, then register an app to get an ID
+        # and secret key:
+        #     http://www.aerisweather.com/account
+        client_id = INSERT_AERIS_CLIENT_ID_HERE
+        client_secret = INSERT_AERIS_CLIENT_SECRET_HERE
+
+    [[WWO]]
+        # World Weather Online API key.
+        api_key = INSERT_WWO_API_KEY_HERE
+
+    [[DS]]
+        # Pirate Weather API key (Pirate Weather is the drop-in replacement
+        # for Dark Sky).
+        api_key = INSERT_DS_API_KEY_HERE
+
+[DataBindings]
+    # The binding the forecast services read and write.  It is separate from
+    # the station's own wx_binding: forecasts live in their own database.
+    [[forecast_binding]]
+        manager = weewx.manager.Manager
+        schema = user.forecast.schema
+        table_name = archive
+        database = forecast_sqlite
+
+[Databases]
+    # The forecast database, named by the binding above.  To keep forecasts in
+    # MySQL instead, define a MySQL database here and point the binding at it.
+    [[forecast_sqlite]]
+        database_name = forecast.sdb
+        database_type = SQLite
+
+[StdReport]
+    # The sample report, which illustrates every way this extension can
+    # present a forecast.  The value below already carries this station's
+    # [StdReport] HTML_ROOT, prepended at install time; edit it only to put
+    # the pages somewhere else.
+    #
+    # The extension also ships an optional 'compare' skin, which plots
+    # forecasts from several sources side by side.  It is installed but not
+    # enabled; see the README for how to turn it on.
+    [[forecast]]
+        skin = forecast
+        HTML_ROOT = forecast
+"""
 
 def loader():
     return ForecastInstaller()
@@ -25,43 +150,7 @@ class ForecastInstaller(ExtensionInstaller):
                               'user.forecast.WWOForecast',
                               'user.forecast.DSForecast',
                               'user.forecast.XTideForecast'],
-            config={
-                'Forecast': {
-                    'data_binding': 'forecast_binding',
-                    'XTide': {
-                        'location': 'INSERT_LOCATION_HERE (e.g., Boston)'},
-                    'Zambretti': {
-                        'hemisphere': 'NORTH'},
-                    'NWS': {
-                        'lid': 'INSERT_LOCATION_ID_HERE (e.g., MAZ014)',
-                        'foid': 'INSERT_FORECAST_OFFICE_ID_HERE (e.g., BOX)'},
-                    'WU': {
-                        'api_key': 'INSERT_WU_API_KEY_HERE'},
-                    'OWM': {
-                        'api_key': 'INSERT_OWM_API_KEY_HERE'},
-                    'UKMO': {
-                        'api_key': 'INSERT_UKMO_API_KEY_HERE'},
-                    'Aeris': {
-                        'client_id': 'INSERT_AERIS_CLIENT_ID_HERE',
-                        'client_secret': 'INSERT_AERIS_CLIENT_SECRET_HERE'},
-                    'WWO': {
-                        'api_key': 'INSERT_WWO_API_KEY_HERE'},
-                    'DS': {
-                        'api_key': 'INSERT_DS_API_KEY_HERE'}},
-                'DataBindings': {
-                    'forecast_binding': {
-                        'manager': 'weewx.manager.Manager',
-                        'schema': 'user.forecast.schema',
-                        'table_name': 'archive',
-                        'database': 'forecast_sqlite'}},
-                'Databases': {
-                    'forecast_sqlite': {
-                        'database_name': 'forecast.sdb',
-                        'database_type': 'SQLite'}},
-                'StdReport': {
-                    'forecast': {
-                        'skin': 'forecast',
-                        'HTML_ROOT': 'forecast'}}},
+            config=configobj.ConfigObj(StringIO(CONFIG)),
             files=[('bin/user',
                     ['bin/user/forecast.py']),
                    ('skins/compare',

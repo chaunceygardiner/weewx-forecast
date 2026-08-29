@@ -1,3 +1,15 @@
+5.1.1 (in progress)
+* The installer now writes a commented configuration stanza.  The [Forecast],
+  [DataBindings], [Databases] and [StdReport] sections it merges into a fresh
+  weewx.conf arrive with comments explaining every option: what each of the
+  nine sources needs, where to get its API key, that the tide location is an
+  xtide location name, and that the services you do not use should be removed
+  from archive_services.  Previously those sections landed as bare key = value
+  lines, ten of them INSERT_..._HERE placeholders with nothing anywhere
+  saying what to put there.  No option changed its value or its meaning; this
+  affects fresh installs only, since the installer never rewrites a weewx.conf
+  that already has these sections.
+
 5.1
 * Honor the shutdown flag that weewx 5.5 hands to report generators.  The
   compare skin's ForecastPlotGenerator now checks it while scanning the
