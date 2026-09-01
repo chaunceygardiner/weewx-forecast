@@ -2,9 +2,18 @@
 # Copyright 2013-2020 Matthew Wall
 # Copyright 2020-2026 John A Kline (john@johnkline.com)
 # Distributed under the terms of the GNU Public License (GPLv3)
-"""weewx module that provides forecasts
+"""weewx module that provides weather and tide forecasts.
 
-Compatibility:
+The user manual -- installation, every option of all nine sources, the
+$forecast template tags, the translatable labels, the comparison report and
+troubleshooting -- is at https://chaunceygardiner.github.io/weewx-forecast/
+and its source is in docs/ beside this file.  User-facing reference belongs
+there, not here: it was duplicated in both places for a while and the two
+drifted.
+
+What this file contains is what a reader of the CODE needs.
+
+Compatibility -- the service version each parser was written against:
 
    US National Weather Service (NWS) point forecasts as of July 2013
    Weather Underground (WU) 5day as of ~January 2020
@@ -16,498 +25,27 @@ Compatibility:
 
 Design
 
-   The forecasting module supports various forecast methods for weather and
-   tides.  Weather forecasting can be downloaded (NWS, WU, OWM, UKMO, ...) or
-   generated (Zambretti).  Tide forecasting is generated using XTide.
-
-   There are two parts: a service that downloads/generates the forecasts, and
-   a search list extension that provides access to the forecast data in weewx
-   reports.
-
-   A single table stores all forecast information.  This means that each record
-   may have many unused fields, but it makes querying and database management
-   a bit easier.  It also minimizes the number of variables needed for use in
-   templates.  There are a few fields in each record that are common to every
-   forecast method.  See the Database section in this file for details.
-
-   The forecasting runs in a separate thread.  It is fire-and-forget - the
-   main thread starts a forecasting thread and does not bother to check its
-   status.  The main thread will never run more than one thread per forecast
-   method.
-
-Prerequisites
-
-   The XTide forecast requires xtide.  On debian systems, do this:
-     sudo apt-get install xtide
-
-   Some of the forecasting sites require a subscription.  This extension
-   supports only those services with a no-cost level of service.
-
-Configuration
-
-   To enable forecasting, add a [Forecast] section to weewx.conf, add a
-   section to [Databases] to indicate where forecast data should be stored,
-   then append user.forecast.XXXForecast to the service list for each
-   forecasting method that should be enabled.
-
-   To make forecast data available in reports, extend the CheetahGenerator
-   then optionally customize the [Forecast] strings and parameters in the
-   skin configuration.
-
-   Some parameters can be defined in the Forecast section of weewx.conf, then
-   overridden for specific forecasting methods as needed.  In the sample
-   configuration below, the commented parameters will default to the indicated
-   values.  Uncommented parameters must be specified.
-
-[Forecast]
-    # The database in which to record forecast information, defined in the
-    # 'DataBindings' section of the weewx configuration.
-    data_binding = forecast_binding
-
-    # How often to calculate/download the forecast, in seconds
-    #interval = 1800
-
-    # How long to keep old forecasts, in seconds.  use None to keep forever.
-    #max_age = 604800
-
-    [[XTide]]
-        # Location for which tides are desired
-        location = Boston
-
-        # How often to generate the tide forecast, in seconds
-        #interval = 1209600
-
-        # The length of the time period for forecasts, in seconds
-        #duration = 2419200
-
-        # How often to prune old tides from database, None to keep forever
-        #max_age = 2419200
-
-    [[Zambretti]]
-        # hemisphere can be NORTH or SOUTH
-        #hemisphere = NORTH
-
-        # How often to generate the forecast, in seconds
-        #interval = 3600
-
-        # The period, in seconds, used to determine an average wind direction
-        #winddir_period = 1800
-
-        # The period, in seconds, used to determine the pressure trend
-        #pressure_period = 10800
-
-        # The lower and upper pressure define the range to which the forecaster
-        # should be calibrated, in units of millibar (hPa).  The 'barometer'
-        # pressure (not station pressure) is used to calculate the forecast.
-        #lower_pressure = 950.0
-        #upper_pressure = 1050.0
-
-    [[NWS]]
-        # First figure out your forecast office identifier (foid), then request
-        # a point forecast using a url of this form in a web browser:
-        #   http://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
-        # Scan the output for a service location identifier corresponding
-        # to your location.
-
-        # National Weather Service location identifier
-        lid = MAZ005
-
-        # lid_desc disambiguates when a lid is listed more than once in the document.
-        # If lid_desc is not specified, the first entry for the specified lid is used.
-        lid_desc = Lowell-Middlesex MA
-
-        # National Weather Service forecast office identifier
-        foid = BOX
-
-        # URL for point forecast matrix
-        #url = http://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt
-
-        # How often to download the forecast, in seconds
-        #interval = 10800
-
-    [[WU]]
-        # An API key is required to access the weather underground.
-        # obtain an API key here:
-        #   http://www.wunderground.com/weather/api/
-        api_key = KEY
-
-        # To specify the location for which to generate a forecast, one can specify
-        # the Geocode (lat, long), IATA Code, ICAO Code, Place ID or Postal Key.
-        #
-        # These options are listed here:
-        # https://docs.google.com/document/d/1_Zte7-SdOjnzBttb1-Y9e0Wgl0_3tah9dSwXUyEA3-c/
-        #
-        # If none of the following is specified, the station's latititude and longitude
-        # will be used.  If more than one is specified, the first will be used according
-        # to the order listed here.
-        #
-        # geocode   - "33.74,-84.39"
-        # iataCode  - DEN
-        # icaoCode  - KDEN
-        # placeid   - 327145917e06d09373dd2760425a88622a62d248fd97550eb4883737d8d1173b
-        # postalKey - 81657:US
-
-        # The 5day forecast will be generated.  It is the forecast available with the
-        # free API key one can obtain for providing station data to WU.
-        # The 5day forecast is actually six days (if the current day is counted).
-
-        # How often to download the forecast, in seconds
-        #interval = 10800
-
-    [[OWM]]
-        # An API key is required to access the open weathermap forecasts.
-        # Obtain a token here:
-        #   http://openweathermap.org/appid
-        api_key = APPID
-
-        # The location can be one of the following:
-        #   Boston,us            - city name, country code
-        #   524901               - city ID
-        #   51.5081, -0.0759     - latitude,longitude
-        # If no location is specified, station latitude and longitude are used
-        #location = 524901
-
-        # There are two types of forecast available, 5-day/3-hour and
-        # 16-day/daily.  Only the 5-day/3-hour forecasts are supported.
-        #forecast_type = 5day3hour
-
-        # How often to download the forecast, in seconds
-        #interval = 10800
-
-    [[UKMO]]
-        # An API key is required to access the UK Met Office forecasts.
-        # Create an account and obtain datapoint access here:
-        #   http://metoffice.gov.uk/datapoint
-        api_key = API_KEY
-
-        # The latitude and longitude of the point forecast
-        # If not specified, the lat long of the station is used.
-        #latitude = 51.5081
-        #longitude = -0.0759
-
-        # How often to download the forecast, in seconds
-        #interval = 10800
-
-    [[Aeris]]
-        # An ID and secret key are required to access Aeris forecasts.
-        # Create an account then register an app here:
-        #   http://www.aerisweather.com/account
-        client_id = XXXXXXXXXXXXXXXXXXXXX
-        client_secret = YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-
-        # The location is a 'supported place', which can be specified by:
-        #   coordinate            37.25,-97.25
-        #   city,state            seattle,wa
-        #   city,state,country    new+york,new+york,us
-        #   city,country          paris,fr
-        #   zip/postal code       M3C4H9
-        #   ICAO                  KBFI
-        #   IATA airport code     ROA
-        #   county/parish         fips:53033
-        #   NOAA zone             MNZ029
-        # If no location is specified, station latitude and longitude are used
-        #location = MAZ014
-
-        # Forecasts are available in 1, 3, 6, 12, or 24 hour increments.
-        #forecast_type = 1hr
-
-    [[WWO]]
-        # An API key is required to access WWO forecasts.
-        api_key = XXXX
-
-        # The location can be specified by:
-        #   US ZIP code           02139
-        #   UK POST code          X
-        #   Canadian Postal code  M3C4H9
-        #   IP address            x.x.x.x
-        #   coordinate            37.25,-97.25
-        #   city name             London
-        # If no location is specified, station latitude and longitude are used
-        #location = 02139
-
-        # Forecasts are available in 3, 6, 12, and 24 hour increments.
-        #forecast_type = 3
-
-    [[DS]]
-        # An API key is required to access Pirate Weather forecasts (the DS
-        # source is Pirate Weather, the drop-in replacement for Dark Sky).
-        api_key = XXXX
-
-        # The location is specified using latitude and longitude in the format
-        # latitude, longitude. If no location is specified, station latitude
-        # and longitude are used
-        #location = lat, long
-
-        # How often to download the forecast, in seconds
-        #interval = 10800
-
-        # Two types of forecast are supported; hourly out to two or optionally
-        # seven days and daily out to seven days. Default is daily.
-        #forecast_type = hourly|daily
-
-        # Extend the hourly forecast to 7 days. True extends the hourly
-        # forecast to 7 days up from the default 2 days. Only applies if
-        # forecast_type == hourly. Default is False.
-        #extend_hourly = True|False
-
-[DataBindings]
-    [[forecast_binding]]
-        database = forecast_sqlite
-
-[Databases]
-    [[forecast_sqlite]]
-        database_type = SQLite
-        database_name = archive/forecast.sdb
-    [[forecast_mysql]]
-        database_type = MySql
-        database_name = forecast
-
-[Engine]
-    [[Services]]
-        # append only the forecasting service(s) that you need
-        archive_services = ... , user.forecast.XTideForecast, user.forecast.ZambrettiForecast, user.forecast.NWSForecast, user.forecast.WUForecast, user.forecast.OWMForecast, user.forecast.UKMOForecast, user.forecast.AerisForecast, user.forecast.WWOForecast, user.forecast.DSForecast
-
-
-Skin Configuration
-
-  To use the forecast variables in a skin, extend the search_list by adding
-  something like this to weewx.conf:
-
-[StdReport]
-    [[StandardReport]]
-        [[[CheetahGenerator]]]
-            search_list_extensions = user.forecast.ForecastVariables
-
-   Here are the options that can be specified in the skin.conf file.  The
-   values below are the defaults.  Add these only to override the defaults,
-   for example to translate to languages other than English.
-
-[Forecast]
-    [[Labels]]
-        [[[Directions]]]
-            # labels for compass directions
-            N = N
-            NNE = NNE
-            NE = NE
-            ENE = ENE
-            E = E
-            ESE = ESE
-            SE = SE
-            SSE = SSE
-            S = S
-            SSW = SSW
-            SW = SW
-            WSW = WSW
-            W = W
-            WNW = WNW
-            NW = NW
-            NNW = NNW
-
-        [[[Tide]]]
-            # labels for tides
-            H = High Tide
-            L = Low Tide
-
-        [[[Zambretti]]]
-            # mapping between zambretti codes and descriptive labels
-            A = Settled fine
-            B = Fine weather
-            C = Becoming fine
-            D = Fine, becoming less settled
-            E = Fine, possible showers
-            F = Fairly fine, improving
-            G = Fairly fine, possible showers early
-            H = Fairly fine, showery later
-            I = Showery early, improving
-            J = Changeable, mending
-            K = Fairly fine, showers likely
-            L = Rather unsettled clearing later
-            M = Unsettled, probably improving
-            N = Showery, bright intervals
-            O = Showery, becoming less settled
-            P = Changeable, some rain
-            Q = Unsettled, short fine intervals
-            R = Unsettled, rain later
-            S = Unsettled, some rain
-            T = Mostly very unsettled
-            U = Occasional rain, worsening
-            V = Rain at times, very unsettled
-            W = Rain at frequent intervals
-            X = Rain, very unsettled
-            Y = Stormy, may improve
-            Z = Stormy, much rain
-
-        [[[Weather]]]
-            # labels for components of a weather forecast
-            temp = Temperature
-            dewpt = Dewpoint
-            humidity = Relative Humidity
-            winddir = Wind Direction
-            windspd = Wind Speed
-            windchar = Wind Character
-            windgust = Wind Gust
-            clouds = Sky Coverage
-            windchill = Wind Chill
-            heatindex = Heat Index
-            obvis = Obstructions to Visibility
-
-            # types of precipitation
-            rain = Rain
-            rainshwrs = Rain Showers
-            sprinkles = Rain Sprinkles
-            tstms = Thunderstorms
-            drizzle = Drizzle
-            snow = Snow
-            snowshwrs = Snow Showers
-            flurries = Snow Flurries
-            sleet = Ice Pellets
-            frzngrain = Freezing Rain
-            frzngdrzl = Freezing Drizzle
-            hail = Hail
-
-            # codes for sky cover
-            CL = Clear
-            FW = Few Clouds
-            SC = Scattered Clouds
-            BK = Broken Clouds
-            B1 = Mostly Cloudy
-            B2 = Considerable Cloudiness
-            OV = Overcast
-
-            # codes for precipitation
-            S = Slight Chance
-            C = Chance
-            L = Likely
-            O = Occasional
-            D = Definite
-
-            IS = Isolated
-            #SC = Scattered      # conflicts with scattered clouds
-            NM = Numerous
-            EC = Extensive Coverage
-            PA = Patchy
-            AR = Areas
-            WD = Widespread
-
-            # quantifiers for the precipitation codes
-            Sq  = '<20%'
-            Cq  = '30-50%'
-            Lq  = '60-70%'
-            Oq  = '80-100%'
-            Dq  = '80-100%'
-
-            ISq = '<20%'
-            SCq = '30-50%'
-            NMq = '60-70%'
-            ECq = '80-100%'
-            PAq = '<25%'
-            ARq = '25-50%'
-            WDq = '>50%'
-
-            # codes for obstructions to visibility
-            F = Fog
-            PF = Patchy Fog
-            F+ = Dense Fog
-            PF+ = Patchy Dense Fog
-            H = Haze
-            BS = Blowing Snow
-            K = Smoke
-            BD = Blowing Dust
-            AF = Volcanic Ash
-            M = Mist
-            FF = Freezing Fog
-            DST = Dust
-            SND = Sand
-            SP = Spray
-            DW = Dust Whirls
-            SS = Sand Storm
-            LDS = Low Drifting Snow
-            LDD = Low Drifting Dust
-            LDN = Low Drifting Sand
-            BN = Blowing Sand
-            SF = Shallow Fog
-
-            # codes for wind character:
-            LT = Light
-            GN = Gentle
-            BZ = Breezy
-            WY = Windy
-            VW = Very Windy
-            SD = Strong/Damaging
-            HF = Hurricane Force
-
-Variables for Templates
-
-  This section shows some of the variables that can be used in template files.
-
-Labels
-
-  Labels are grouped by module and identified by key.  For example, specifying
-  $forecast.label('Zambretti', 'C') returns 'Becoming fine', and specifying
-  $forecast.label('Weather', 'temp') returns 'Temperature'.
-
-$forecast.label(module, key)
-
-XTide
-
-  The index is the nth event from the current time.
-
-$forecast.xtide(0).dateTime     date/time that the forecast was requested
-$forecast.xtide(0).issued_ts    date/time that the forecast was created
-$forecast.xtide(0).event_ts     date/time of the event
-$forecast.xtide(0).hilo         H or L
-$forecast.xtide(0).offset       depth above/below mean low tide
-$forecast.xtide(0).location     where the tide is forecast
-
-for tide in $forecast.xtides
-  $tide.event_ts $tide.hilo $tide.offset
-
-Zambretti
-
-  The Zambretti forecast consists of a code and corresponding description.
-
-$forecast.zambretti.dateTime    date/time that the forecast was requested
-$forecast.zambretti.issued_ts   date/time that the forecast was created
-$forecast.zambretti.event_ts    date/time of the forecast
-$forecast.zambretti.code        zambretti forecast code (A-Z)
-
-NWS, WU, OWM, UKMO, Aeris, WWO
-
-  Elements of a weather forecast are referred to by period or daily summary.
-  A forecast source must be specified.
-
-for $period in $forecast.weather_periods('NWS')
-  $period.dateTime
-  $period.event_ts
-  ...
-
-  The summary is a single-day aggregate of any periods in that day.
-
-$summary = $forecast.weather_summary('NWS')
-$summary.dateTime
-$summary.event_ts
-$summary.location
-$summary.clouds
-$summary.temp
-$summary.tempMin
-$summary.tempMax
-$summary.dewpoint
-$summary.dewpointMin
-$summary.dewpointMax
-$summary.humidity
-$summary.humidityMin
-$summary.humidityMax
-$summary.windSpeed
-$summary.windSpeedMin
-$summary.windSpeedMax
-$summary.windGust
-$summary.windDir
-$summary.windDirs        dictionary
-$summary.windChar
-$summary.windChars       dictionary
-$summary.pop
-$summary.precip          array
-$summary.obvis           array
+   Forecasts are either downloaded (NWS, WU, OWM, UKMO, Aeris, WWO, DS) or
+   generated locally (Zambretti from the station's own pressure trend, XTide
+   by running the xtide 'tide' program).
+
+   There are two parts: a service per source that downloads or generates the
+   forecast, and ForecastVariables, a search list extension that gives report
+   templates access to what was stored.
+
+   A SINGLE table stores every method's records.  This means a record carries
+   many unused fields -- a tide record has no humidity -- and those stay NULL.
+   That is deliberate: it keeps querying and database management simple and
+   holds down the number of template variables.  Every record carries method,
+   event_ts (the time being forecast) and issued_ts (when the source issued
+   it), whatever produced it.  See the Database section further down.
+
+   Forecasting runs on its own thread, fire and forget: the main thread starts
+   one and never checks on it, and never runs more than one thread per method.
+
+   Two sources require Python 3.7 -- XTide calls subprocess.run with
+   capture_output, UKMO calls datetime.fromisoformat -- and each declines with
+   a log line rather than failing later.  See python37_missing().
 """
 
 
@@ -528,6 +66,7 @@ import logging
 import os, errno
 import re
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -550,9 +89,33 @@ import weeutil.weeutil
 from weewx.engine import StdService
 from weewx.cheetahgenerator import SearchList
 
-VERSION = "5.1"
+VERSION = "5.2"
 
-if weewx.__version__ < "4":
+def major_version(version):
+    """Return the leading integer of a version string, 0 if there is none.
+
+    Compare major versions numerically.  A string compare reads "10.0.0" as
+    less than "4", so it would reject weewx 10 and later.
+    """
+    m = re.match(r'\d+', version)
+    return int(m.group(0)) if m else 0
+
+
+def python37_missing(what):
+    """Return an error string if this Python is older than 3.7, else None.
+
+    Two sources need 3.7: XTide calls subprocess.run(capture_output=...) and
+    UKMO calls datetime.fromisoformat.  Nothing else in this module does, so
+    the check belongs at each of those sources rather than at import -- weewx
+    4 supports Python 3.5 and later, and the other seven sources run there.
+    """
+    if sys.version_info >= (3, 7):
+        return None
+    return '%s require Python 3.7 or later, found %d.%d' % (
+        what, sys.version_info[0], sys.version_info[1])
+
+
+if major_version(weewx.__version__) < 4:
     raise weewx.UnsupportedFeature(
         "WeeWX 4 is required, found %s" % weewx.__version__)
 
@@ -3159,6 +2722,11 @@ class UKMOForecast(Forecast):
             errmsg.append('latitude is not specified')
         if self.longitude is None:
             errmsg.append('longitude is not specified')
+        # utc2ts calls datetime.fromisoformat, which needs Python 3.7.  Without
+        # this the download succeeds and every parse dies with AttributeError.
+        version_err = python37_missing('UK Met Office forecasts')
+        if version_err:
+            errmsg.append(version_err)
         if errmsg:
             for e in errmsg:
                 logerr("{}: {}".format(self.method_id, e))
@@ -3899,6 +3467,16 @@ class XTideForecast(Forecast):
             logerr('%s: forecast will not be run' % XT_KEY)
             return
 
+        # generate() calls subprocess.run(capture_output=...), which needs
+        # Python 3.7.  Check here, where a bad version actually matters,
+        # rather than at import: weewx 4 supports Python 3.5 and later, and
+        # every source but this one and UKMO runs there.
+        errmsg = python37_missing('tide forecasts')
+        if errmsg:
+            logerr('%s: %s' % (XT_KEY, errmsg))
+            logerr('%s: forecast will not be run' % XT_KEY)
+            return
+
         loginf("%s: interval=%s max_age=%s location='%s' duration=%s" %
                (XT_KEY, self.interval, self.max_age,
                 self.location, self.duration))
@@ -3965,6 +3543,12 @@ class XTideForecast(Forecast):
         current time and end at today plus duration.  units, if given, forces
         xtide's output units ('m' metric, 'f' feet); parse() converts either
         to US, so this is normally left at the station default."""
+        # generate() is a staticmethod, so the command-line harness reaches
+        # it without ever constructing the service and its version check.
+        errmsg = python37_missing('tide forecasts')
+        if errmsg:
+            logerr('%s: %s' % (XT_KEY, errmsg))
+            return None
         if sts is None:
             sts = weeutil.weeutil.startOfDay(int(time.time()))
         if ets is None:
@@ -5103,6 +4687,12 @@ if __name__ == "__main__":
                                "daily", default='daily')
         parser.add_option("--loc", dest="loc", type=str, metavar="LOC",
                           help="specify the location")
+        parser.add_option("--latitude", dest="latitude", type=str,
+                          metavar="LAT",
+                          help="specify the latitude (UKMO)")
+        parser.add_option("--longitude", dest="longitude", type=str,
+                          metavar="LON",
+                          help="specify the longitude (UKMO)")
         parser.add_option("--api-key", dest="api_key", type=str, metavar="KEY",
                           help="specify the api key")
         parser.add_option("--client-id", dest="client_id", type=str,
@@ -5144,7 +4734,9 @@ if __name__ == "__main__":
                 fcast = OWMForecast.download(options.api_key, options.loc)
                 print(fcast)
             elif options.method.lower() == 'ukmo':
-                fcast = UKMOForecast.download(options.api_key, options.loc)
+                fcast = UKMOForecast.download(options.api_key,
+                                              options.latitude,
+                                              options.longitude)
                 print(fcast)
             elif options.method.lower() == 'ukmet':
                 fcast = AerisForecast.download(
@@ -5184,8 +4776,9 @@ if __name__ == "__main__":
                     matrix = NWSParseForecast(text, options.lid)
                     print(matrix)
                 elif options.method.lower() == 'ukmo':
-                    records, msgs = UKMOForecast.parse(text,
-                                                       location=options.loc)
+                    records, msgs = UKMOForecast.parse(
+                        text, latitude=options.latitude,
+                        longitude=options.longitude)
                     print(records)
                     print(msgs)
                 elif options.method.lower() == 'ds':

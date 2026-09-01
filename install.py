@@ -23,8 +23,9 @@ from weecfg.extension import ExtensionInstaller
 # assignment would set hemisphere on [Forecast], which nothing reads.
 #
 # The other options each source accepts are listed, with their defaults, in
-# the comments at the top of bin/user/forecast.py; add them here only to
-# override a default.
+# the manual at
+#   https://chaunceygardiner.github.io/weewx-forecast/sources.html
+# Add them here only to override a default.
 #
 # Comments are written INSIDE their section, never above a top-level header:
 # WeeWX 4.0 through 4.4 shallow-copy the installer's config and drop the
@@ -45,7 +46,8 @@ CONFIG = """
     # rather not see those startup errors.
     #
     # Each source accepts more options than are set here; they are listed,
-    # with their defaults, in the comments at the top of bin/user/forecast.py.
+    # with their defaults, in the manual:
+    # https://chaunceygardiner.github.io/weewx-forecast/sources.html
     #
     # The database in which to record forecast information, defined in the
     # 'DataBindings' and 'Databases' sections that this installer also writes.
@@ -136,7 +138,7 @@ def loader():
 class ForecastInstaller(ExtensionInstaller):
     def __init__(self):
         super(ForecastInstaller, self).__init__(
-            version="5.1",
+            version="5.2",
             name='forecast',
             description='Generate and display weather and tide forecasts.',
             author="Matthew Wall",

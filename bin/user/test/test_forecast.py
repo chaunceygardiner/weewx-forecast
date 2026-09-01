@@ -18,6 +18,7 @@ import shutil
 import sys
 import time
 import unittest
+from unittest import mock
 
 import configobj
 import weecfg.extension
@@ -2371,6 +2372,64 @@ class InstallerConfigTest(unittest.TestCase):
                 'live key in its own section'
                 % (line.strip(), indent(line), following.strip(),
                    indent(following)))
+
+
+class VersionGateTest(unittest.TestCase):
+    """The module-level weewx version gate in forecast.py."""
+
+    def test_major_version_compares_numerically(self):
+        """The gate used to be a string compare, which reads '10.0.0' as less
+        than '4' and would refuse to load under weewx 10 and later."""
+        self.assertEqual(forecast.major_version('4.0.0'), 4)
+        self.assertEqual(forecast.major_version('4.10.2'), 4)
+        self.assertEqual(forecast.major_version('5.5.0'), 5)
+        self.assertEqual(forecast.major_version('10.0.0'), 10)
+        self.assertEqual(forecast.major_version('3.9.2'), 3)
+
+    def test_major_version_accepts_what_the_gate_must_accept(self):
+        """Every weewx this extension supports must clear the >= 4 gate, and
+        weewx 3 must not.  A string compare passes the first four and fails
+        '10.0.0', which is the regression this pins."""
+        for version in ['4', '4.0.0', '4.10.2', '5.0', '5.5.0', '10.0.0']:
+            self.assertGreaterEqual(
+                forecast.major_version(version), 4,
+                '%s must satisfy the weewx >= 4 gate' % version)
+        for version in ['3.9.2', '2.7.0']:
+            self.assertLess(
+                forecast.major_version(version), 4,
+                '%s must not satisfy the weewx >= 4 gate' % version)
+
+    def test_major_version_of_junk_is_zero(self):
+        """An unparseable version must fail the gate, not raise."""
+        self.assertEqual(forecast.major_version('unknown'), 0)
+        self.assertEqual(forecast.major_version(''), 0)
+
+
+class Python37GuardTest(unittest.TestCase):
+    """Two sources need Python 3.7 -- XTide (subprocess.run(capture_output))
+    and UKMO (datetime.fromisoformat).  Both must decline with a message
+    rather than failing later with TypeError or AttributeError."""
+
+    def test_below_37_returns_a_message_naming_the_source(self):
+        with mock.patch.object(forecast.sys, 'version_info', (3, 6, 15)):
+            for what in ['tide forecasts', 'UK Met Office forecasts']:
+                msg = forecast.python37_missing(what)
+                self.assertIsNotNone(msg)
+                self.assertIn(what, msg)
+                self.assertIn('3.7', msg)
+                self.assertIn('3.6', msg)
+
+    def test_37_and_later_return_none(self):
+        for version in [(3, 7, 0), (3, 11, 2), (4, 0, 0)]:
+            with mock.patch.object(forecast.sys, 'version_info', version):
+                self.assertIsNone(forecast.python37_missing('tide forecasts'))
+
+    def test_generate_declines_instead_of_raising(self):
+        """generate() is a staticmethod the command-line harness reaches
+        without constructing the service, so it needs its own check."""
+        with mock.patch.object(forecast.sys, 'version_info', (3, 6, 15)):
+            self.assertIsNone(
+                forecast.XTideForecast.generate('Tenants Harbor'))
 
 
 # use this to run individual tests while debugging

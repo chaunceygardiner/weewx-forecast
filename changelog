@@ -1,4 +1,4 @@
-5.1.1 (in progress)
+5.2 31aug2026
 * The installer now writes a commented configuration stanza.  The [Forecast],
   [DataBindings], [Databases] and [StdReport] sections it merges into a fresh
   weewx.conf arrive with comments explaining every option: what each of the
@@ -9,6 +9,78 @@
   saying what to put there.  No option changed its value or its meaning; this
   affects fresh installs only, since the installer never rewrites a weewx.conf
   that already has these sections.
+
+* Tide and UK Met Office forecasts now check the Python version at startup.
+  Both need Python 3.7: tide generation calls subprocess.run with
+  capture_output, and the UKMO parser calls datetime.fromisoformat.  On an
+  older Python, tides failed with a TypeError partway through generating a
+  forecast, and UKMO downloaded successfully and then died with an
+  AttributeError in every parse.  Each source now logs that it requires
+  Python 3.7 or later and declines to run, the same way they already do when
+  a location or an API key is missing.  The other seven sources are
+  unaffected and run as before.  The requirement is not new, it was simply
+  never stated nor checked.  The README and the manual now state it.
+
+  The tide check sits in both the service and XTideForecast.generate, so the
+  command-line harness reports the version too rather than raising TypeError.
+
+* Fix two invalid CSS properties in the iconic skin.  forecast_iconic.css
+  declared "webkit-radius" and "moz-radius", which are not properties -- the
+  vendor-prefixed spellings need a leading hyphen -- so both lines had never
+  done anything, and the "border-radius" beside them was already doing the
+  work.  Rendering is unchanged.  The Nu validator rejects them, but only
+  when it is pointed at the css: a validation run that globs *.html never
+  reads an external stylesheet, which is why these survived.
+  Also removed a duplicated forecast_strip.css from the skin's copy_once
+  list, which had been copying that one file twice.
+
+* Fix the command-line UKMO test harness, which could not run at all.  UKMO
+  is the one source keyed by latitude and longitude rather than a location
+  name, but --method=ukmo passed --loc where the code wanted latitude, and
+  omitted longitude entirely; the parse path passed a location keyword that
+  UKMOForecast.parse does not accept.  Both raised TypeError.  There are now
+  --latitude and --longitude options, and both UKMO paths use them.  Only the
+  command-line debugging tool was affected; UKMO forecasts running under
+  weewxd were never on this path.
+
+* Cut forecast.py's module docstring from 506 lines to 44.  It had carried a
+  full copy of the user reference -- the configuration stanza, the skin
+  options, every label, the template tags -- which the manual now covers, and
+  the two copies had already drifted (the Zambretti interval default was wrong
+  in the docstring for years).  What remains is what a reader of the code
+  needs: which service version each parser was written against, the two-part
+  design, why one table holds every method with unused fields left NULL, the
+  threading model, and the two sources that require Python 3.7.  install.py's
+  comments now point at the manual rather than at the docstring, so the text
+  the installer writes into weewx.conf sends users somewhere searchable.
+
+* Rework the README around the manual.  It had grown to 276 lines that
+  duplicated what the manual now covers -- the full configuration stanza, the
+  xtide build, the comparison report -- with the manual itself mentioned once,
+  below the copyright block.  It is now 139 lines: what the extension is, a
+  table of the nine sources, what you get, and the install commands, with
+  links into the manual for the detail.  Nothing was dropped; it moved.
+
+* Add a manual, published with GitHub Pages at
+  https://chaunceygardiner.github.io/weewx-forecast/.  Installation, every
+  option of all nine sources and where to get each API key, the $forecast
+  template tags, the full set of translatable labels, the comparison report
+  and troubleshooting.  Most of this reference existed only in a 500-line
+  comment at the top of forecast.py, where no user would find it.
+
+* Fix two documentation errors found while writing the manual: the README's
+  UK Met Office example spelled the option "longtitude", which the code does
+  not read (it reads "longitude").  A user copying that example lost BOTH
+  coordinates, not just the misspelled one: UKMO falls back to the station's
+  latitude and longitude when either is missing, so the correctly spelled
+  latitude was silently discarded too.  Also, forecast.py's configuration
+  comments gave the Zambretti interval default as 3600 when the code uses 600.
+
+* The weewx version check compares the major version numerically.  It was a
+  string comparison, which reads "10.0.0" as less than "4", so the extension
+  would have refused to load under weewx 10 and later with "WeeWX 4 is
+  required".  No released weewx is affected; this is a latent failure being
+  fixed before it can bite.
 
 5.1
 * Honor the shutdown flag that weewx 5.5 hands to report generators.  The

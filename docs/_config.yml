@@ -1,0 +1,52 @@
+# GitHub Pages configuration for https://chaunceygardiner.github.io/weewx-forecast/
+title: weewx-forecast
+description: >-
+  Weather and tide forecasts for WeeWX -- nine sources from the US National
+  Weather Service, Weather Underground, OpenWeatherMap, the UK Met Office,
+  Aeris, World Weather Online and Pirate Weather, plus Zambretti forecasts
+  from your own barometer and XTide tide predictions.
+url: "https://chaunceygardiner.github.io"
+baseurl: "/weewx-forecast"
+
+# Pinned so weewx-forecast, weewx-skyfield, weewx-celestial and weewx-loopdata
+# cannot drift apart when upstream changes.
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+# GitHub Pages enables jekyll-relative-links by default; naming it here (and
+# every other default this site relies on) is what makes a local build match
+# the live site -- without it, the .md links between pages stay unconverted.
+plugins:
+  - jekyll-remote-theme
+  - jekyll-sitemap
+  - jekyll-relative-links
+  - jekyll-redirect-from
+
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  "weewx-forecast on GitHub":
+    - "https://github.com/chaunceygardiner/weewx-forecast"
+aux_links_new_tab: true
+
+# External links shown at the bottom of the left sidebar nav, on every page.
+nav_external_links:
+  - title: weewx-forecast on GitHub
+    url: https://github.com/chaunceygardiner/weewx-forecast
+  - title: Download weewx-forecast.zip
+    url: https://github.com/chaunceygardiner/weewx-forecast/releases/latest/download/weewx-forecast.zip
+
+callouts:
+  note:
+    title: Note
+    color: blue
+  important:
+    title: Important
+    color: red
+  tip:
+    title: Tip
+    color: green
+
+footer_content: >-
+  weewx-forecast is Copyright &copy; 2013&ndash;2020 Matthew Wall and
+  Copyright &copy; 2020&ndash;2026 John A Kline, and is licensed under the
+  GNU Public License v3.

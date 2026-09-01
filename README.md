@@ -1,240 +1,124 @@
-# weewx-forecast
+# weewx-forecast — weather and tide forecasts for WeeWX
+Open source plugin for WeeWX software.
 
-This is a forecasting extension for the [WeeWX](https://weewx.com) weather system.
+Copyright (C)2013-2020 by Matthew Wall
+
+Copyright (C)2020-2026 by John A Kline (john@johnkline.com)
+
+[![Read the manual](assets/btn-manual.svg)](https://chaunceygardiner.github.io/weewx-forecast/)
+[![Download weewx-forecast.zip](assets/btn-download.svg)](https://github.com/chaunceygardiner/weewx-forecast/releases/latest/download/weewx-forecast.zip)
+[![Report an issue](assets/btn-issue.svg)](https://github.com/chaunceygardiner/weewx-forecast/issues)
+
+The manual covers installation, every option of all nine forecast sources, the
+`$forecast` template tags, the labels you can translate, the comparison report
+and troubleshooting — with search.
+
+**This extension requires WeeWX 4 or 5.  Tide (xtide) and UK Met Office
+forecasts additionally require Python 3.7 or later; WeeWX 5 already requires
+Python 3.7 or later, so that affects only WeeWX 4 stations.**
 
 Originally written by Matthew Wall; maintained since 2020 by John A Kline.
 
-Copyright 2013-2020 Matthew Wall
+## Description
 
-Copyright 2020-2026 John A Kline (john@johnkline.com)
+weewx-forecast adds forecasting to WeeWX.  Some sources are **downloaded** from
+a public weather service; two are **generated** on your own machine from data
+you already have.  You enable only the ones you want, every source you enable
+writes into the same forecast database, and your templates read them all the
+same way.
 
-Distributed under terms of the GPLv3
+Only three sources need no account at all — and one of those, Zambretti, needs
+no network connection either, because it forecasts from your own barometer.
 
-This package includes the forecasting module, unit tests, and a sample skin.
-The following forecast sources are supported:
+## The nine sources
 
-- US National Weather Service (NWS)
-- the weather underground (WU)
-- open weathermap (OWM)
-- UK Met Office (UKMO)
-- Aeris Weather
-- World Weather Online (WWO)
-- Pirate Weather (DS) -- the drop-in replacement for the shut-down Dark Sky
-- Zambretti
-- tide predictions using xtide
+| Source | What it is | Needs |
+|:-------|:-----------|:------|
+| **NWS** | US National Weather Service point forecasts | a forecast office and location id — no account |
+| **Zambretti** | A forecast computed from your own pressure trend | nothing at all |
+| **XTide** | Tide predictions | the `xtide` program, installed locally |
+| **WU** | Weather Underground | an API key |
+| **OWM** | OpenWeatherMap | an API key |
+| **UKMO** | UK Met Office Global Spot | an API key |
+| **Aeris** | Aeris Weather | a client id and secret |
+| **WWO** | World Weather Online | an API key |
+| **DS** | Pirate Weather, the drop-in Dark Sky replacement | an API key |
 
-The forecast extension includes a few independent parts:
+→ [Every source's options, and where to get each API key](https://chaunceygardiner.github.io/weewx-forecast/sources.html)
 
-- a forecast engine that downloads and/or generates forecast data
-- a database schema that is normalized to store data from various sources
-- a search list extension for using forecast data in reports
-- a pre-defined forecast_table for inclusion in reports
-- a pre-defined forecast_strip for inclusion in reports
-- icons for cloud cover, storms, rainfall, snow, etc.
+This extension supports only the no-cost service level of the subscription
+sources.  A source you have not configured costs nothing: it logs one message
+at startup naming what is missing, never binds, and does no work thereafter.
 
-The forecast_table displays forecast data in a table with time going down the
-page.  The `forecast_table.inc` file is a cheetah template designed to be
-included in other templates.  At the beginning of the file is a list of
-variables that determine which forecast data will be displayed.
+## What you get
 
-The forecast_strip displays forecast data in a compact form with time going
-from left to right.  The `forecast_strip.inc` file is a cheetah template designed
-to be included in other templates.  At the beginning of the file is a list of
-variables that determine which forecast data will be displayed.
+- **A forecast engine** that downloads or generates the data, on its own
+  thread, one thread per source, so a slow or unreachable service never holds
+  up your archive cycle.
+  → [Configuration](https://chaunceygardiner.github.io/weewx-forecast/configuration.html)
 
-## Pre-requisites
+- **One normalized database** for all nine sources, so a template that reads
+  NWS reads Pirate Weather the same way.
 
-If you want NWS forecasts, determine your 3-character forecast office
-identifier and 6-character location identifier:
+- **A search list extension** giving reports `$forecast.weather_periods('NWS')`,
+  `$forecast.weather_summary('NWS')`, `$forecast.zambretti.code`,
+  `$forecast.xtide(0).hilo` and the rest.
+  → [Template tags](https://chaunceygardiner.github.io/weewx-forecast/tags.html)
 
-http://www.nws.noaa.gov/oh/hads/USGS/
+- **Four ready-made layouts**, each a Cheetah include you can drop into your own
+  templates: a table with time running down the page, a strip with time running
+  left to right, an icon-led horizontal timeline, and a condensed summary.
+  → [Skins and labels](https://chaunceygardiner.github.io/weewx-forecast/skins.html)
 
-If you want WU forecasts, obtain an api_key:
+- **An icon set** for cloud cover, storms, rain, snow, sleet, freezing rain and
+  hail, derived from Adam Whitcroft's climacons.
 
-http://www.wunderground.com/weather/api/
+- **Every label overridable**, which is also how you translate the extension —
+  no text is hard-coded in English.
+  → [The complete label reference](https://chaunceygardiner.github.io/weewx-forecast/skins.html#labels)
 
-If you want OWM forecasts, obtain an api_key:
+- **An optional comparison report** that plots your configured sources against
+  each other, so you can see which one actually gets your location right.
+  → [The comparison report](https://chaunceygardiner.github.io/weewx-forecast/compare-report.html)
 
-http://openweathermap.org/appid
+## Installation
 
-If you want UK Met Office forecasts, obtain a Met Office Global Spot api_key:
+Download `weewx-forecast.zip` from the
+[latest release](https://github.com/chaunceygardiner/weewx-forecast/releases/latest).
 
-https://www.metoffice.gov.uk/services/data/met-office-weather-datahub
-
-If you want Aeris forecasts, obtain a client id and client secret:
-
-http://www.aerisweather.com/account
-
-If you want WWO forecasts, obtain an api_key:
-
-https://developer.worldweatheronline.com/auth/register
-
-If you want Pirate Weather forecasts (the DS source, formerly Dark Sky),
-obtain an api_key:
-
-https://pirate-weather.apiable.io/
-
-If you want tide forecasts, xtide is required.  Determine your location:
-
-http://tides.mobilegeographics.com/
-
-### Building and installing xtide
-
-Note: current versions of debian (trixie) do not include xtide.
-This is likely true of other distributions.
-Install it as follows:
-
-1. Execute the following commands
-   (It's probably easier to save this to a file and run as a script.)
-   ```
-   # Install dependencies
-   sudo apt install build-essential libpng-dev
-
-   # Download and install libtcd
-   cd /tmp
-   wget https://flaterco.com/files/xtide/libtcd-2.2.7-r2.tar.bz2
-   tar xf libtcd-2.2.7-r2.tar.bz2
-   cd libtcd-2.2.7
-   ./configure
-   make
-   sudo make install
-   sudo ldconfig
-
-   # Download and build xtide
-   cd /tmp
-   wget https://flaterco.com/files/xtide/xtide-2.16.tar.xz
-   tar xf xtide-2.16.tar.xz
-   cd xtide-2.16
-   ./configure --without-x --disable-shared CPPFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
-   make
-   sudo make install
-
-   # Download harmonics data
-   cd /tmp
-   wget https://flaterco.com/files/xtide/harmonics-dwf-20251228-free.tar.xz
-   tar xf harmonics-dwf-20251228-free.tar.xz
-   cd harmonics-dwf-20251228
-   sudo mkdir -p /usr/local/share/xtide
-   sudo cp harmonics-dwf-20251228-free.tcd /usr/local/share/xtide/
-
-   # Create conf file
-   echo "/usr/local/share/xtide" | sudo tee /etc/xtide.conf
-   ```
-
-1. Verify xtide works by running the following as the
-   user that weewx runs under:
-   ```
-   /usr/local/bin/tide -l "Palo Alto Yacht Harbor"
-   ```
-
-1. Set the prog variable to point to the built xtide:
-   ```
-   [Forecast]
-       ...
-       [[XTide]]
-           location = Palo Alto Yacht Harbor, San Francisco Bay, California
-           prog = /usr/local/bin/tide
-   ```
-
-## Installation instructions
-
-1. run the installer:
-
-   For WeeWX 5:
-   ```
-   weectl extension install weewx-forecast.zip
-   ```
-
-   For WeeWX 4:
-   ```
-   wee_extension --install weewx-forecast.zip
-   ```
-
-1. modify weewx.conf for your location:
-   ```
-   [Forecast]
-       [[NWS]]
-           lid = MAZ005                        # specify a location identifier
-           foid = BOX                          # specify a forecast office identifier
-           lid_desc = Framingham-Middlesex MA  # (optional) specify a lid description for cases
-                                               # where the lid is repeated in the forecast file
-                                               # and the user does not want the first entry for that lid.
-                                               # Just omit this entry entirely unless you have examined
-                                               # the forecast file and know the description of the repeated
-                                               # lid entry that you want to use.
-       [[WU]]
-           api_key = XXXXXXXXXXXXXXXX   # specify a weather underground api_key
-           # A location may be specified.  If it isn't, your stations lat/long
-           # will be used.
-           #
-           # To specify the location for which to generate a forecast, one can specify
-           # the Geocode (lat, long), IATA Code, ICAO Code, Place ID or Postal Key.
-           #
-           # These options are listed here:
-           # https://docs.google.com/document/d/1_Zte7-SdOjnzBttb1-Y9e0Wgl0_3tah9dSwXUyEA3-c/
-           #
-           # If none of the following is specified, the station's latititude and longitude
-           # will be used.  If more than one is specified, the first will be used according
-           # to the order listed here.
-           #
-           # geocode = "33.74,-84.39"
-           # iataCode = DEN
-           # icaoCode = KDEN
-           # placeid = 327145917e06d09373dd2760425a88622a62d248fd97550eb4883737d8d1173b
-           # postalKey = 81657:US
-       [[OWM]]
-           api_key = XXXXXXXXXXXXXXXX   # specify an open weathermap api_key
-       [[UKMO]]
-           # UK Met Office Datahub only needs an API Key.  It must be a key
-           # from the new Met Office Datahub Service.
-           # See: https://www.metoffice.gov.uk/services/data/met-office-weather-datahub
-           # One will need to sign up and obtain a key for global spot data.
-           # This extension uses the three hourly API.
-           # The forecast is generated for the lat long of the station as specified
-           # in weewx.conf.  If you would like a forecast for a different area, specify
-           # latitude and longitude in this section.
-           api_key = XXXXXXXXXXXXXXXX   # specify a UK met office api_key
-           latitude = 51.5081           # The latitude and longitude of the
-           longtitude = -0.0759         # point for which to generate a forecast.
-       [[Aeris]]
-           client_id = XXXXXXXXXXXXXXXX      # specify client identifier
-           client_secret = XXXXXXXXXXXXXXXX  # specify client secret key
-       [[DS]]
-           api_key = XXXXXXXXXXXXXXXX   # specify a Pirate Weather api_key
-       [[XTide]]
-           location = Boston            # specify a location
-   ```
-
-1. restart weewx:
-   ```
-   sudo /etc/init.d/weewx stop
-   sudo /etc/init.d/weewx start
-   ```
-
-This will result in a skin called forecast with web pages that illustrate how
-to use the forecasts.  See comments in `forecast.py` for detailed customization
-options.
-
-## Enabling the comparison report
-
-weewx-forecast includes an optional `compare` skin that plots forecasts from
-several sources side by side.  It is installed but not enabled by default.  To
-turn it on, add a report to `[StdReport]` in weewx.conf:
+For WeeWX 5, pip install (`weectl` lives in the virtual environment, so
+activate it first; yours may sit elsewhere, `~/weewx-venv` is the usual place):
 
 ```
-    [[compare]]
-        skin = compare
-        HTML_ROOT = public_html/compare
+source ~/weewx-venv/bin/activate
+weectl extension install weewx-forecast.zip
 ```
 
-Then restart WeeWX (or run `weectl report run compare`).  The comparison report
-requires:
+For WeeWX 5, Debian or Red Hat package install (`weectl` is already on the
+path, and that install put your account in the `weewx` group, which owns the
+files):
 
-- Pillow (PIL) for image generation,
-- the DejaVu fonts (the `fonts-dejavu` package on Debian/Ubuntu),
-- more than one forecast source configured, and
-- a day or so of retained forecast history, so the per-source "forecast over
-  time" plots have data to draw.
+```
+weectl extension install weewx-forecast.zip
+```
+
+For WeeWX 4:
+
+```
+sudo wee_extension --install weewx-forecast.zip
+```
+
+On a setup.py install, use the full path — e.g.
+`/home/weewx/bin/wee_extension`.
+
+Then restart WeeWX.
+
+The installer writes a fully commented `[Forecast]` section into `weewx.conf`,
+so the options and the API keys you need are explained where you edit them.
+Fill in the sources you want and remove the ones you do not from
+`archive_services`.
+
+→ [Full installation instructions, including building xtide for tide forecasts](https://chaunceygardiner.github.io/weewx-forecast/installation.html)
 
 ## Almanac
 
@@ -243,9 +127,13 @@ planet rise/set and phase data), install
 [weewx-skyfield](https://github.com/chaunceygardiner/weewx-skyfield); it works
 alongside weewx-forecast.
 
-Do not use `weewx-skyfield-almanac` -- it introduced breaking changes that
+Do not use `weewx-skyfield-almanac` — it introduced breaking changes that
 cause problems.  Use `weewx-skyfield`.
 
 ## Credits
 
 Icons were derived from Adam Whitcroft's climacons.
+
+## Licensing
+
+weewx-forecast is licensed under the GNU Public License v3.
