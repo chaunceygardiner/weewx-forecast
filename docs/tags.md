@@ -110,6 +110,15 @@ A summary aggregates every period falling in one day.
 `weather_summary` accepts `ts` to pick a different day, and `periods` to
 summarize a set of periods you already have.
 
+{: .note }
+> **Not every source fills every field.**  One table holds all nine methods, so
+> a field a source does not report is simply absent -- `$summary.windGust` may
+> be empty for one source and populated for another, and the same is true of
+> every row above.  Guard for it in a template rather than assuming, and check
+> what your source actually returns before building a page around a field.
+> As of 5.3, OWM populates `pop`, `tempMin` and `tempMax`, which it did not
+> before.
+
 ## Labels
 
 `$forecast.label(module, key)` looks up the human-readable text for a code.

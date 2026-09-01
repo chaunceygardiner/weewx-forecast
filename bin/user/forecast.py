@@ -89,7 +89,7 @@ import weeutil.weeutil
 from weewx.engine import StdService
 from weewx.cheetahgenerator import SearchList
 
-VERSION = "5.2"
+VERSION = "5.3"
 
 def major_version(version):
     """Return the leading integer of a version string, 0 if there is none.
@@ -2623,6 +2623,25 @@ class OWMForecast(Forecast):
                     if _temp is not None else None
                 r['humidity'] = Forecast.str2int(
                     'humidity', period['main']['humidity'], OWMForecast.KEY)
+                # Daily min/max are Kelvin like temp, and guarded the same way.
+                if 'temp_min' in period['main']:
+                    _tmin = Forecast.str2float(
+                        'temp_min', period['main']['temp_min'],
+                        OWMForecast.KEY)
+                    r['tempMin'] = _tmin * 9.0 / 5.0 - 459.67 \
+                        if _tmin is not None else None
+                if 'temp_max' in period['main']:
+                    _tmax = Forecast.str2float(
+                        'temp_max', period['main']['temp_max'],
+                        OWMForecast.KEY)
+                    r['tempMax'] = _tmax * 9.0 / 5.0 - 459.67 \
+                        if _tmax is not None else None
+                # OWM reports probability of precipitation as 0..1; the pop
+                # column is a percent.
+                if 'pop' in period:
+                    _pop = Forecast.str2float(
+                        'pop', period['pop'], OWMForecast.KEY)
+                    r['pop'] = _pop * 100.0 if _pop is not None else None
                 _wspeed = Forecast.str2float(
                     'wind.speed', period['wind']['speed'], OWMForecast.KEY)
                 r['windSpeed'] = _wspeed * 2.236936 \

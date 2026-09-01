@@ -1445,22 +1445,22 @@ forecast for  for the day 17-Jul-2026 00:00 as of 17-Jul-2026 19:00
         records, msgs = forecast.OWMForecast.parse(data, issued_ts=ts, now=ts)
         self.assertEqual(len(records), 39)
         self.assertEqual(records[0:2], [
-            {'clouds': 'SC', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453528800, 'humidity': 63, 'issued_ts': 1453669141, 'method': 'OWM', 'temp': 26.52800000000002, 'usUnits': 1, 'windDir': 'N', 'windSpeed': 4.71993496},
-            {'clouds': 'FW', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453539600, 'humidity': 78, 'issued_ts': 1453669141, 'method': 'OWM', 'temp': 26.50999999999999, 'usUnits': 1, 'windDir': 'N', 'windSpeed': 6.4871144}
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453528800, 'duration': 10800, 'clouds': 'SC', 'temp': 26.52800000000002, 'humidity': 63, 'tempMin': 14.062999999999988, 'tempMax': 26.52800000000002, 'windSpeed': 4.71993496, 'windDir': 'N'},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453539600, 'duration': 10800, 'clouds': 'FW', 'temp': 26.50999999999999, 'humidity': 78, 'tempMin': 14.707400000000007, 'tempMax': 26.50999999999999, 'windSpeed': 6.4871144, 'windDir': 'N'}
         ])
         # check for snow (qsf) in the forecast
         self.assertEqual(records[4:8], [
-            {'clouds': 'OV', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453572000, 'humidity': 79, 'issued_ts': 1453669141, 'method': 'OWM', 'qsf': 0.0044291338582677165, 'temp': 33.60200000000003, 'usUnits': 1, 'windDir': 'NE', 'windSpeed': 10.78203152},
-            {'clouds': 'OV', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453582800, 'humidity': 76, 'issued_ts': 1453669141, 'method': 'OWM', 'qsf': 0.005413385826771654, 'temp': 32.593999999999994, 'usUnits': 1, 'windDir': 'NE', 'windSpeed': 10.22279752},
-            {'clouds': 'OV', 'qsf': 0.0019685039370078744, 'temp': 30.055999999999983, 'event_ts': 1453593600, 'dateTime': 1453669141, 'windDir': 'NE', 'windSpeed': 10.89387832, 'duration': 10800, 'humidity': 78, 'issued_ts': 1453669141, 'method': 'OWM', 'usUnits': 1},
-            {'clouds': 'OV', 'qsf': 0.0015748031496062994, 'temp': 27.680000000000007, 'event_ts': 1453604400, 'dateTime': 1453669141, 'windDir': 'N', 'windSpeed': 10.75966216, 'duration': 10800, 'humidity': 71, 'issued_ts': 1453669141, 'method': 'OWM', 'usUnits': 1}
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453572000, 'duration': 10800, 'clouds': 'OV', 'temp': 33.60200000000003, 'humidity': 79, 'tempMin': 23.761399999999924, 'tempMax': 33.60200000000003, 'windSpeed': 10.78203152, 'windDir': 'NE', 'qsf': 0.0044291338582677165},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453582800, 'duration': 10800, 'clouds': 'OV', 'temp': 32.593999999999994, 'humidity': 76, 'tempMin': 23.415799999999933, 'tempMax': 32.593999999999994, 'windSpeed': 10.22279752, 'windDir': 'NE', 'qsf': 0.005413385826771654},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453593600, 'duration': 10800, 'clouds': 'OV', 'temp': 30.055999999999983, 'humidity': 78, 'tempMin': 21.523999999999944, 'tempMax': 30.055999999999983, 'windSpeed': 10.89387832, 'windDir': 'NE', 'qsf': 0.0019685039370078744},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453604400, 'duration': 10800, 'clouds': 'OV', 'temp': 27.680000000000007, 'humidity': 71, 'tempMin': 19.810400000000016, 'tempMax': 27.680000000000007, 'windSpeed': 10.75966216, 'windDir': 'N', 'qsf': 0.0015748031496062994}
         ])
         # check for rain (qpf) in the forecast
         self.assertEqual(records[30:34], [
-            {'clouds': 'SC', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453852800, 'humidity': 76, 'issued_ts': 1453669141, 'method': 'OWM', 'temp': 46.70960000000002, 'usUnits': 1, 'windDir': 'SW', 'windSpeed': 11.2965268},
-            {'clouds': 'B2', 'dateTime': 1453669141, 'duration': 10800, 'event_ts': 1453863600, 'humidity': 84, 'issued_ts': 1453669141, 'method': 'OWM', 'qpf': 0.003149606299212599, 'temp': 45.96260000000001, 'usUnits': 1, 'windDir': 'W', 'windSpeed': 9.10432952},
-            {'clouds': 'CL', 'temp': 39.668000000000006, 'event_ts': 1453874400, 'qpf': 0.0007874015748031497, 'dateTime': 1453669141, 'windDir': 'W', 'windSpeed': 8.99248272, 'duration': 10800, 'humidity': 69, 'issued_ts': 1453669141, 'method': 'OWM', 'usUnits': 1},
-            {'clouds': 'FW', 'temp': 33.85759999999999, 'event_ts': 1453885200, 'dateTime': 1453669141, 'windDir': 'W', 'windSpeed': 8.18718576, 'duration': 10800, 'humidity': 67, 'issued_ts': 1453669141, 'method': 'OWM', 'usUnits': 1}
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453852800, 'duration': 10800, 'clouds': 'SC', 'temp': 46.70960000000002, 'humidity': 76, 'tempMin': 46.70960000000002, 'tempMax': 46.70960000000002, 'windSpeed': 11.2965268, 'windDir': 'SW'},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453863600, 'duration': 10800, 'clouds': 'B2', 'temp': 45.96260000000001, 'humidity': 84, 'tempMin': 45.96260000000001, 'tempMax': 45.96260000000001, 'windSpeed': 9.10432952, 'windDir': 'W', 'qpf': 0.003149606299212599},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453874400, 'duration': 10800, 'clouds': 'CL', 'temp': 39.668000000000006, 'humidity': 69, 'tempMin': 39.668000000000006, 'tempMax': 39.668000000000006, 'windSpeed': 8.99248272, 'windDir': 'W', 'qpf': 0.0007874015748031497},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1453885200, 'duration': 10800, 'clouds': 'FW', 'temp': 33.85759999999999, 'humidity': 67, 'tempMin': 33.85759999999999, 'tempMax': 33.85759999999999, 'windSpeed': 8.18718576, 'windDir': 'W'}
         ])
 
 
@@ -1472,15 +1472,15 @@ forecast for  for the day 17-Jul-2026 00:00 as of 17-Jul-2026 19:00
         records, msgs = forecast.OWMForecast.parse(data, issued_ts=ts, now=ts)
         self.assertEqual(len(records), 40)
         self.assertEqual(records[0:2], [
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784343600, 'duration': 10800, 'clouds': 'B2', 'temp': 67.55000000000001, 'humidity': 57, 'windSpeed': 3.04223296, 'windDir': 'S'},
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784354400, 'duration': 10800, 'clouds': 'B2', 'temp': 66.37999999999994, 'humidity': 56, 'windSpeed': 4.96599792, 'windDir': 'SW'}
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784343600, 'duration': 10800, 'clouds': 'B2', 'temp': 67.55000000000001, 'humidity': 57, 'tempMin': 65.22800000000001, 'tempMax': 67.55000000000001, 'pop': 0.0, 'windSpeed': 3.04223296, 'windDir': 'S'},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784354400, 'duration': 10800, 'clouds': 'B2', 'temp': 66.37999999999994, 'humidity': 56, 'tempMin': 64.02199999999999, 'tempMax': 66.37999999999994, 'pop': 0.0, 'windSpeed': 4.96599792, 'windDir': 'SW'}
         ])
         # check for rain (qpf) in the forecast
         self.assertEqual(records[31:35], [
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784678400, 'duration': 10800, 'clouds': 'OV', 'temp': 70.68199999999996, 'humidity': 85, 'windSpeed': 7.58321304, 'windDir': 'SE', 'qpf': 0.010236220472440946},
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784689200, 'duration': 10800, 'clouds': 'OV', 'temp': 68.44999999999999, 'humidity': 99, 'windSpeed': 9.46223928, 'windDir': 'E', 'qpf': 0.16929133858267717},
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784700000, 'duration': 10800, 'clouds': 'OV', 'temp': 72.13999999999993, 'humidity': 98, 'windSpeed': 13.13081432, 'windDir': 'SW', 'qpf': 0.6059055118110237},
-            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784710800, 'duration': 10800, 'clouds': 'OV', 'temp': 71.04199999999997, 'humidity': 97, 'windSpeed': 9.283284400000001, 'windDir': 'SW', 'qpf': 0.010236220472440946}
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784678400, 'duration': 10800, 'clouds': 'OV', 'temp': 70.68199999999996, 'humidity': 85, 'tempMin': 70.68199999999996, 'tempMax': 70.68199999999996, 'pop': 21.0, 'windSpeed': 7.58321304, 'windDir': 'SE', 'qpf': 0.010236220472440946},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784689200, 'duration': 10800, 'clouds': 'OV', 'temp': 68.44999999999999, 'humidity': 99, 'tempMin': 68.44999999999999, 'tempMax': 68.44999999999999, 'pop': 100.0, 'windSpeed': 9.46223928, 'windDir': 'E', 'qpf': 0.16929133858267717},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784700000, 'duration': 10800, 'clouds': 'OV', 'temp': 72.13999999999993, 'humidity': 98, 'tempMin': 72.13999999999993, 'tempMax': 72.13999999999993, 'pop': 100.0, 'windSpeed': 13.13081432, 'windDir': 'SW', 'qpf': 0.6059055118110237},
+            {'method': 'OWM', 'usUnits': 1, 'dateTime': 1453669141, 'issued_ts': 1453669141, 'event_ts': 1784710800, 'duration': 10800, 'clouds': 'OV', 'temp': 71.04199999999997, 'humidity': 97, 'tempMin': 71.04199999999997, 'tempMax': 71.04199999999997, 'pop': 31.0, 'windSpeed': 9.283284400000001, 'windDir': 'SW', 'qpf': 0.010236220472440946}
         ])
 
 

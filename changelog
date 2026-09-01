@@ -1,3 +1,17 @@
+5.3 31aug2026
+* OWM forecasts now record probability of precipitation and the daily minimum
+  and maximum temperature.  OpenWeatherMap sends `pop`, `main.temp_min` and
+  `main.temp_max` in every period and the parser had been discarding all
+  three; they now populate the pop, tempMin and tempMax columns, so
+  $forecast.weather_summary('OWM') reports them like any other source.  Found
+  by sbsrouteur, who reported it in pull request #1 in January 2021.
+
+  Visibility, which the same report proposed putting in obvis, is deliberately
+  not included: obvis is a three-character code for an obstruction to
+  visibility (fog, haze, blowing snow), not a distance, and OWM's `visibility`
+  is metres of visual range.  Mapping one to the other would take a threshold
+  table that the service does not supply.
+
 5.2 31aug2026
 * The installer now writes a commented configuration stanza.  The [Forecast],
   [DataBindings], [Databases] and [StdReport] sections it merges into a fresh
