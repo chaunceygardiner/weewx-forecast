@@ -1,0 +1,40 @@
+---
+layout: vendor/compress
+---
+{%- comment -%}
+  just-the-docs v0.12.0's table_wrappers layout (the theme pinned in
+  _config.yml), copied so that every page's finished HTML passes through
+  here, plus one change: void elements lose their trailing slash.  The
+  theme's seo tags and kramdown both write "<meta ... />", "<link ... />",
+  "<img ... />", "<hr />", which the Nu Html Checker reports on every page.
+
+  Only the void elements named below are touched, each by the tag it opens:
+  a " />" anywhere else -- inside an inline SVG, where the slash closes the
+  element and dropping it would swallow every sibling after it, in prose,
+  or in an attribute -- is left alone.  Escaped markup in code blocks
+  ("&lt;br /&gt;") never matched anyway.  Liquid has no regular
+  expressions, so each tag is handled by splitting the page on its opening
+  and, for each piece that follows one, trimming " /" from the end of the
+  text before the first ">" when it is there.
+{%- endcomment -%}
+{%- assign content_ = content | replace: '<table', '<div class="table-wrapper"><table' -%}
+{%- assign content_ = content_ | replace: '</table>', '</table></div>' -%}
+{%- assign content_ = content_ | replace: '<hr />', '<hr>' | replace: '<br />', '<br>' -%}
+{%- assign void_tags = 'meta,link,img,hr,br,input,source' | split: ',' -%}
+{%- for tag in void_tags -%}
+  {%- assign opening = '<' | append: tag | append: ' ' -%}
+  {%- assign parts = content_ | split: opening -%}
+  {%- assign content_ = parts[0] -%}
+  {%- for part in parts offset: 1 -%}
+    {%- assign fixed = part -%}
+    {%- assign head = part | split: '>' | first -%}
+    {%- assign n = head.size | minus: 2 -%}
+    {%- assign tail = head | slice: n, 2 -%}
+    {%- if n > 0 and tail == ' /' -%}
+      {%- assign rest = part | remove_first: head -%}
+      {%- assign fixed = head | slice: 0, n | append: rest -%}
+    {%- endif -%}
+    {%- assign content_ = content_ | append: opening | append: fixed -%}
+  {%- endfor -%}
+{%- endfor -%}
+{{ content_ }}
