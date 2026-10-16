@@ -1,3 +1,90 @@
+5.4 16oct2026
+* ACTION REQUIRED if you use the sample forecast skin and never chose a
+  source: the four layouts now default to NWS instead of UKMO.  Each of
+  forecast_table.inc, forecast_strip.inc, forecast_iconic.inc and
+  forecast_compact.inc documents `source = NWS` at the top of the file and
+  then set UKMO in the code below, so the single-table, single-strip, iconic
+  and compact pages showed UKMO to every station no matter what it had
+  configured -- and UKMO needs an API key most stations don't have.  To
+  choose your own, set `source` in the forecast skin's skin.conf under the
+  layout's own subsection of [Extras] -- [[forecast_table_settings]],
+  [[forecast_strip_settings]], [[forecast_iconic_settings]] or
+  [[forecast_compact_settings]] -- or at the top of the include.  Reported
+  by barcik75 in issue #2.
+
+* The forecast table's `desc` column is now named `description`, and its
+  `offset` column `tide_offset`, which is what lets this extension run on
+  MySQL and MariaDB at all.  DESC is a reserved word in both, and OFFSET in
+  MariaDB 10.6 and later, while WeeWX's database layer backquotes exactly one
+  reserved word, `interval`.  So the CREATE TABLE -- and every INSERT that
+  carried a value for these fields -- was a syntax error, and the forecast
+  table could never be built.  Tested against MySQL 8.4 and MariaDB 11.8,
+  both in their default strict mode.  Existing sqlite databases are renamed
+  in place the first time weewxd starts; there is nothing to do by hand.
+  Templates that use $period.desc or $tide.offset keep working, since the
+  old names are still passed to the report engine.  The rename is one way:
+  to go back to 5.3 or earlier, first rename the columns back (description
+  to "desc", tide_offset to "offset") -- the manual's Configuration page
+  gives the two commands.  Reported by barcik75 in issue #2.
+
+* World Weather Online forecasts work again.  WWO retired its free/v2
+  endpoint, which this extension had always used, and it now answers every
+  request with 403.  The default is now the premium/v1 endpoint, which
+  accepts the key from a free WWO account as well as a paid one.  An error
+  WWO reports, such as a location it cannot match, is now logged in WWO's
+  own words, and a `url` left pointing at the retired free/v2 endpoint is
+  named in the log.  Reported by barcik75 in issue #2.
+
+* A `url` set in weewx.conf is now treated as a base URL by every downloading
+  source.  The API key, location and the other download parameters are
+  appended to it unless it already carries a query string, in which case it
+  is used exactly as written.  A Pirate Weather (DS) url that already holds
+  your API key is also used as written, since that service carries the key
+  and location in the path, and NWS still appends the forecast office
+  (`issuedby=`) unless your url already names one.  Previously the
+  parameters were added only when the url was left at its default, so anyone
+  pointing a source at a moved endpoint got a bare URL with no key and no
+  location -- which is why changing an endpoint meant editing forecast.py.
+
+* Sources you never configured no longer log errors at startup.  The
+  installer writes a stanza for all nine sources, most of them holding a
+  placeholder you are meant to replace, so a station using two of them
+  reported errors for the other seven every time weewxd started.  Each now
+  says once, at info, that it is not configured and will not run.  A source
+  that IS configured but cannot run -- UK Met Office on Python older than
+  3.7 -- still logs an error.
+
+* A damaged forecast table no longer stops WeeWX.  A table that does not
+  match the extension's schema used to raise an error that stopped weewxd at
+  startup -- archiving, uploads and reports along with forecasts.  The same
+  now holds for a table carrying both the old and new name of a renamed
+  column, and for a rename the database cannot do (it needs sqlite 3.25 or
+  later).  Each logs one error naming the problem, with the SQL to run by
+  hand where that helps, and the forecast sources stay idle while the rest
+  of WeeWX keeps running.
+
+* Tide levels no longer lose precision when XTide's own units preference is
+  set to meters.  tide was run without -u, so a preference saved in the
+  WeeWX user's ~/.xtide.xml switched its output to meters, which tide rounds
+  to two decimals; levels were converted back to feet but drifted by up to
+  about 0.015 ft.  tide is now always asked for feet.
+
+* The startup log no longer prints a thousand-character masked UK Met Office
+  key.  Masked credentials keep their last four characters behind at most 28
+  X's.
+
+* Removed the meteoplot link from the sample skin's index page.  This
+  extension has never shipped a meteoplot template, so the link had always
+  been a 404.  Reported by barcik75 in issue #2.
+
+* Dropped the second NWS URL constant, which pointed at
+  forecast-v3.weather.gov.  That host stopped resolving years ago.  The
+  default NWS forecast URL is unaffected and continues to work.
+
+* Documentation: the NWS point forecast lookup pointed at
+  http://www.nws.noaa.gov/oh/hads/USGS/, which now returns 403.  The live
+  address is https://hads.ncep.noaa.gov/USGS/
+
 5.3 31aug2026
 * OWM forecasts now record probability of precipitation and the daily minimum
   and maximum temperature.  OpenWeatherMap sends `pop`, `main.temp_min` and
@@ -9,7 +96,7 @@
   Visibility, which the same report proposed putting in obvis, is deliberately
   not included: obvis is a three-character code for an obstruction to
   visibility (fog, haze, blowing snow), not a distance, and OWM's `visibility`
-  is metres of visual range.  Mapping one to the other would take a threshold
+  is meters of visual range.  Mapping one to the other would take a threshold
   table that the service does not supply.
 
 5.2 31aug2026

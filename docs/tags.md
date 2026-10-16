@@ -34,6 +34,7 @@ Everything below then hangs off `$forecast`.
 $forecast.xtide(0).event_ts     date/time of the event
 $forecast.xtide(0).hilo         H or L
 $forecast.xtide(0).offset       depth above/below mean low tide
+                                (also $forecast.xtide(0).tide_offset)
 $forecast.xtide(0).location     where the tide is forecast
 ```
 
@@ -83,6 +84,9 @@ the source and its `forecast_type`.
 ```
 
 `weather_periods` accepts `from_ts`, `to_ts` and `max_events` (default 240).
+
+`$period.description` is the source's text description of the period.
+`$period.desc`, its name before 5.4, still works.
 
 ### Daily summaries
 

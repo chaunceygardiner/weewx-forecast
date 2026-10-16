@@ -1,4 +1,5 @@
 ## forecast iconic - Copyright 2016 Matthew Wall
+## Copyright 2020-2026 John A Kline (john@johnkline.com)
 ## $Id: forecast_iconic.inc 1789 2019-01-10 03:30:48Z mwall $
 #set $forecast_iconic_version = 0.6
 ##
@@ -26,7 +27,7 @@
 #set $t0 = time.time()
 
 ## Which forecast should be displayed?
-#set $forecast_source = 'UKMO'
+#set $forecast_source = 'NWS'
 
 ## How many days should be considered?
 #set $num_days = 7

@@ -66,8 +66,9 @@ needs.  Every option arrives with a comment explaining what it is and, where an
 API key is required, where to get one.
 
 It also appends **all nine** forecast services to `archive_services`.  A source
-whose credentials are still `INSERT_..._HERE` placeholders logs one error at
-startup naming what is missing and then does nothing at all — it never binds, so
+whose credentials are still `INSERT_..._HERE` placeholders logs one
+informational line at startup naming what is missing and then does nothing at
+all — it never binds, so
 the message does not repeat and it costs no time on any archive cycle.  Remove
 the sources you do not use from `archive_services` if you would rather not see
 those startup messages.
@@ -151,4 +152,4 @@ weectl extension uninstall forecast
 
 on WeeWX 5, or `wee_extension --uninstall forecast` on WeeWX 4.  This leaves the
 forecast database in place; delete `archive/forecast.sdb` yourself if you want
-it gone.
+it gone (on MySQL or MariaDB, drop the `forecast` database).

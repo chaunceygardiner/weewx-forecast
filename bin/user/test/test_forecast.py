@@ -16,6 +16,7 @@ import math
 import os
 import shutil
 import sys
+import tempfile
 import time
 import unittest
 from unittest import mock
@@ -491,25 +492,25 @@ class FakeData(object):
 
     @staticmethod
     def gen_fake_xtide_data():
-        records = [{'hilo': 'L', 'offset': '-0.71', 'event_ts': 1377031620,
+        records = [{'hilo': 'L', 'tide_offset': '-0.71', 'event_ts': 1377031620,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'H', 'offset': '11.56', 'event_ts': 1377054240,
+                   {'hilo': 'H', 'tide_offset': '11.56', 'event_ts': 1377054240,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'L', 'offset': '-1.35', 'event_ts': 1377077040,
+                   {'hilo': 'L', 'tide_offset': '-1.35', 'event_ts': 1377077040,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'H', 'offset': '10.73', 'event_ts': 1377099480,
+                   {'hilo': 'H', 'tide_offset': '10.73', 'event_ts': 1377099480,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'L', 'offset': '-0.95', 'event_ts': 1377121260,
+                   {'hilo': 'L', 'tide_offset': '-0.95', 'event_ts': 1377121260,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'H', 'offset': '11.54', 'event_ts': 1377143820,
+                   {'hilo': 'H', 'tide_offset': '11.54', 'event_ts': 1377143820,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 },
-                   {'hilo': 'L', 'offset': '-1.35', 'event_ts': 1377166380,
+                   {'hilo': 'L', 'tide_offset': '-1.35', 'event_ts': 1377166380,
                     'method': 'XTide', 'usUnits': 1, 'dateTime': 1377043837,
                     'issued_ts': 1377031620 }]
         return records
@@ -1558,10 +1559,15 @@ forecast for  for the day 17-Jul-2026 00:00 as of 17-Jul-2026 19:00
         print(records)
 
     def test_aeris_build_url(self):
-        # check an explicit url
+        # A url with a query string of its own is used exactly as written.
         url = forecast.AerisForecast.build_url(
-            None, None, None, None, 'http://foobar.com')
-        self.assertEqual(url, 'http://foobar.com')
+            None, None, None, None, 'http://foobar.com/?everything=here')
+        self.assertEqual(url, 'http://foobar.com/?everything=here')
+        # A url without one is a base: the parameters are appended to it, so
+        # that overriding a moved endpoint still produces a working request.
+        url = forecast.AerisForecast.build_url(
+            'id', 'secret', 'seattle,wa', '1hr', 'http://foobar.com/')
+        self.assertEqual(url, 'http://foobar.com/seattle,wa?client_id=id&client_secret=secret&filter=1hr')
         # check a city,state
         url = forecast.AerisForecast.build_url(
             'id', 'secret', 'seattle,wa', '1hr', forecast.AerisForecast.DEFAULT_URL)
@@ -1613,12 +1619,31 @@ forecast for  for the day 17-Jul-2026 00:00 as of 17-Jul-2026 19:00
         records, msgs = forecast.WWOForecast.parse(fcast)
         print(records)
 
-    def test_wwo_invalid_client(self):
+    def test_wwo_error_reply(self):
+        # premium/v1's reply to a location it cannot match, captured
+        # 2026-10-16.  It arrives with HTTP 200, so parse() must report it.
         ts = 1453669141
-        data = readfile('WWO_KEY_ERROR')
+        data = readfile('WWO_LOCATION_ERROR')
         records, msgs = forecast.WWOForecast.parse(data, issued_ts=ts, now=ts)
-        self.assertEqual(0, 0)
-        self.assertEqual(msgs, [u"WWO: KeyError: 'XXX' is not a valid key for 'Free-Weather-API-V2'"])
+        self.assertEqual(records, [])
+        self.assertEqual(msgs, ["WWO: Unable to find any matching weather "
+                                "location to the query submitted!"])
+
+    def test_wwo_reply_without_a_data_object(self):
+        for text in ['{"data": null}', '[]', '{"data": []}']:
+            records, msgs = forecast.WWOForecast.parse(text)
+            self.assertEqual(records, [])
+            self.assertEqual(msgs, ['WWO: no data in reply'], text)
+
+    def test_wwo_warns_about_a_retired_url(self):
+        config_dict = create_config(get_testdir('test_wwo_retired_url'),
+                                    'forecast.WWOForecast')
+        config_dict['Forecast'] = {'WWO': {
+            'url': 'http://api.worldweatheronline.com/free/v2/weather.ashx'}}
+        with mock.patch.object(forecast, 'logerr') as logerr:
+            forecast.WWOForecast(mock.Mock(), config_dict)
+        self.assertTrue(any('free/v2' in c[0][0]
+                            for c in logerr.call_args_list))
 
     def test_wwo_london_1(self):
         ts = 1453669141
@@ -1743,25 +1768,25 @@ forecast for  for the day 17-Jul-2026 00:00 as of 17-Jul-2026 19:00
         self.assertEqual(''.join(lines), expect)
 
         # verify that records are created properly
-        expect = [{'hilo': 'L', 'offset': -0.66, 'event_ts': 1377031440,
+        expect = [{'hilo': 'L', 'tide_offset': -0.66, 'event_ts': 1377031440,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'H', 'offset': 11.56, 'event_ts': 1377054120,
+                  {'hilo': 'H', 'tide_offset': 11.56, 'event_ts': 1377054120,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'L', 'offset': -1.32, 'event_ts': 1377076860,
+                  {'hilo': 'L', 'tide_offset': -1.32, 'event_ts': 1377076860,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'H', 'offset': 10.72, 'event_ts': 1377099420,
+                  {'hilo': 'H', 'tide_offset': 10.72, 'event_ts': 1377099420,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'L', 'offset': -0.90, 'event_ts': 1377121140,
+                  {'hilo': 'L', 'tide_offset': -0.90, 'event_ts': 1377121140,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'H', 'offset': 11.55, 'event_ts': 1377143760,
+                  {'hilo': 'H', 'tide_offset': 11.55, 'event_ts': 1377143760,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' },
-                  {'hilo': 'L', 'offset': -1.33, 'event_ts': 1377166320,
+                  {'hilo': 'L', 'tide_offset': -1.33, 'event_ts': 1377166320,
                    'method': 'XTide', 'usUnits': 1, 'issued_ts': 1377043837,
                    'dateTime': 1377043837, 'location': 'Tenants Harbor' }]
         records = f.parse(lines, now=1377043837, location='Tenants Harbor')
@@ -1973,35 +1998,35 @@ $forecast.xtide(-1, from_ts=1377043837).dateTime
         # converted from meters to US feet by parse())
         expect = [{'event_ts': 1377029460, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'H', 'offset': 7.480333552885034,
+                   'hilo': 'H', 'tide_offset': 7.480333552885034,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377052740, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'L', 'offset': 1.0826798563386235,
+                   'hilo': 'L', 'tide_offset': 1.0826798563386235,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377070860, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'H', 'offset': 8.858289733679646,
+                   'hilo': 'H', 'tide_offset': 8.858289733679646,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377098040, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'L', 'offset': -0.32808480495109804,
+                   'hilo': 'L', 'tide_offset': -0.32808480495109804,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377118200, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'H', 'offset': 7.775609877341023,
+                   'hilo': 'H', 'tide_offset': 7.775609877341023,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377142200, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'L', 'offset': 0.8858289733679646,
+                   'hilo': 'L', 'tide_offset': 0.8858289733679646,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377160380, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'H', 'offset': 8.464587967738328,
+                   'hilo': 'H', 'tide_offset': 8.464587967738328,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1},
                   {'event_ts': 1377186960, 'dateTime': 1377043837,
                    'location': 'Palo Alto Yacht Harbor',
-                   'hilo': 'L', 'offset': -0.0984254414853294,
+                   'hilo': 'L', 'tide_offset': -0.0984254414853294,
                    'issued_ts': 1377043837, 'method': 'XTide', 'usUnits': 1}]
         records = f.parse(lines, now=1377043837, location='Palo Alto Yacht Harbor')
         self.assertEqual(records, expect)
@@ -2430,6 +2455,335 @@ class Python37GuardTest(unittest.TestCase):
         with mock.patch.object(forecast.sys, 'version_info', (3, 6, 15)):
             self.assertIsNone(
                 forecast.XTideForecast.generate('Tenants Harbor'))
+
+
+class DescColumnMigrationTest(unittest.TestCase):
+    """The forecast table's 'desc' and 'offset' columns, renamed in 5.4.
+
+    DESC is a reserved word in MySQL and MariaDB, OFFSET in MariaDB 10.6 and
+    later, and weewx's database layer backquotes exactly one reserved word,
+    'interval', so either name made the CREATE TABLE a syntax error there and
+    the forecast table could never be built at all.  Only sqlite databases
+    (and a table built by hand on MySQL or MariaDB) can carry the old names,
+    and they are renamed in place the first time a service opens them.
+    """
+
+    @staticmethod
+    def make_pre_5_4_database(dbfile, description='Boston MA'):
+        """Build a forecast table with the columns named as before 5.4."""
+        import sqlite3
+        old = dict((new, o) for o, new in forecast.Forecast.RENAMED_COLUMNS)
+        cols = ['"%s" %s' % (old[n], t) if n in old else '%s %s' % (n, t)
+                for n, t in forecast.schema]
+        conn = sqlite3.connect(dbfile)
+        conn.execute('CREATE TABLE archive (%s)' % ', '.join(cols))
+        conn.execute('INSERT INTO archive (method, usUnits, dateTime, '
+                     'issued_ts, event_ts, "desc", "offset") '
+                     'VALUES (?,?,?,?,?,?,?)',
+                     ('NWS', 1, 1377043837, 1377043837, 1377043837, description,
+                      7.48))
+        conn.commit()
+        conn.close()
+
+    def open_forecast_dbm(self, tdir):
+        config_dict = create_config(tdir, 'user.forecast.NWSForecast')
+        return weewx.manager.open_manager_with_config(
+            config_dict, data_binding='forecast_binding')
+
+    def test_old_column_is_renamed_and_data_survives(self):
+        tdir = get_testdir('test_desc_migration')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        self.make_pre_5_4_database(tdir + '/forecast.sdb')
+
+        with self.open_forecast_dbm(tdir) as dbm:
+            self.assertIn('desc', dbm.connection.columnsOf(dbm.table_name))
+            forecast.Forecast.rename_old_columns(dbm)
+            columns = dbm.connection.columnsOf(dbm.table_name)
+            self.assertNotIn('desc', columns)
+            self.assertNotIn('offset', columns)
+            self.assertIn('description', columns)
+            self.assertIn('tide_offset', columns)
+            # The schema on disk must now match the schema in memory, which is
+            # the check Forecast.__init__ makes right after the migration.
+            self.assertEqual(columns, [x[0] for x in forecast.schema])
+            row = dbm.getSql('SELECT description, tide_offset FROM %s LIMIT 1'
+                             % dbm.table_name)
+            self.assertEqual(row[0], 'Boston MA')
+            self.assertEqual(row[1], 7.48)
+
+    def test_migration_is_idempotent(self):
+        """Nine services open the database at startup; only the first renames."""
+        tdir = get_testdir('test_desc_migration_twice')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        self.make_pre_5_4_database(tdir + '/forecast.sdb')
+
+        with self.open_forecast_dbm(tdir) as dbm:
+            forecast.Forecast.rename_old_columns(dbm)
+            forecast.Forecast.rename_old_columns(dbm)
+            self.assertIn('description', dbm.connection.columnsOf(dbm.table_name))
+
+    def test_half_migrated_database_is_refused(self):
+        """Both names present means a rename that stopped part way."""
+        tdir = get_testdir('test_desc_migration_half')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        dbfile = tdir + '/forecast.sdb'
+        self.make_pre_5_4_database(dbfile)
+        import sqlite3
+        conn = sqlite3.connect(dbfile)
+        conn.execute('ALTER TABLE archive ADD COLUMN description VARCHAR(256)')
+        conn.commit()
+        conn.close()
+
+        with self.open_forecast_dbm(tdir) as dbm:
+            with self.assertRaises(forecast.ForecastDatabaseError) as cm:
+                forecast.Forecast.rename_old_columns(dbm)
+            self.assertIn('description', str(cm.exception))
+
+    def test_failed_rename_disables_forecasts_only(self):
+        """RENAME COLUMN needs sqlite 3.25; an older one must not stop weewxd,
+        and the error must say what to run by hand."""
+        dbm = mock.Mock(table_name='archive')
+        dbm.connection.dbtype = 'sqlite'
+        dbm.connection.columnsOf.return_value = ['dateTime', 'desc']
+        dbm.connection.execute.side_effect = Exception('near "COLUMN": syntax error')
+        with self.assertRaises(forecast.ForecastDatabaseError) as cm:
+            forecast.Forecast.rename_old_columns(dbm)
+        self.assertIn('ALTER TABLE archive RENAME COLUMN "desc" TO description',
+                      str(cm.exception))
+
+    def service_against(self, tdir, cls=None, eng=None):
+        """Construct a real source on the database in tdir, with an engine
+        that records whether the source binds."""
+        cls = cls or forecast.ZambrettiForecast
+        config_dict = create_config(tdir, 'user.forecast.ZambrettiForecast')
+        eng = eng or mock.Mock(spec=['bind'])
+        with mock.patch.object(forecast, 'logerr') as logerr:
+            svc = cls(eng, config_dict)
+        return svc, eng, logerr
+
+    def test_damaged_table_is_reported_once_not_per_source(self):
+        """All nine sources share the table; nine identical ERROR lines
+        would undo the quiet startup."""
+        tdir = get_testdir('test_damaged_table_once')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        import sqlite3
+        conn = sqlite3.connect(tdir + '/forecast.sdb')
+        conn.execute('CREATE TABLE archive (%s)' % ', '.join(
+            '%s %s' % (n, t) for n, t in forecast.schema[:-1]))
+        conn.commit()
+        conn.close()
+
+        def db_errors(logerr):
+            return [c for c in logerr.call_args_list
+                    if 'forecasts are disabled' in c[0][0]]
+
+        eng = mock.Mock(spec=['bind'])
+        _, _, first = self.service_against(tdir, eng=eng)
+        _, _, second = self.service_against(tdir, forecast.NWSForecast, eng)
+        self.assertEqual(len(db_errors(first)), 1)
+        self.assertEqual(db_errors(second), [])
+
+        # weewxd restarts with a new engine in the same process after an I/O
+        # error; that start must say why forecasts are off all over again.
+        _, _, restarted = self.service_against(tdir, eng=mock.Mock(spec=['bind']))
+        self.assertEqual(len(db_errors(restarted)), 1)
+
+    def test_half_migrated_database_disables_forecasts_only(self):
+        """A damaged forecast table must not take weewxd down with it."""
+        tdir = get_testdir('test_desc_migration_half_service')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        dbfile = tdir + '/forecast.sdb'
+        self.make_pre_5_4_database(dbfile)
+        import sqlite3
+        conn = sqlite3.connect(dbfile)
+        conn.execute('ALTER TABLE archive ADD COLUMN description VARCHAR(256)')
+        conn.commit()
+        conn.close()
+
+        svc, eng, logerr = self.service_against(tdir)
+        self.assertFalse(svc.database_ok)
+        eng.bind.assert_not_called()
+        self.assertIn('disabled', logerr.call_args[0][0])
+
+    def test_schema_mismatch_disables_forecasts_only(self):
+        tdir = get_testdir('test_schema_mismatch_service')
+        rmtree(tdir)
+        os.makedirs(tdir)
+        import sqlite3
+        conn = sqlite3.connect(tdir + '/forecast.sdb')
+        # The real schema, one column short.
+        conn.execute('CREATE TABLE archive (%s)' % ', '.join(
+            '%s %s' % (n, t) for n, t in forecast.schema[:-1]))
+        conn.commit()
+        conn.close()
+
+        svc, eng, logerr = self.service_against(tdir)
+        self.assertFalse(svc.database_ok)
+        eng.bind.assert_not_called()
+        self.assertIn('schema mismatch', logerr.call_args[0][0])
+
+    def test_healthy_database_binds(self):
+        tdir = get_testdir('test_healthy_database_service')
+        rmtree(tdir)
+        svc, eng, logerr = self.service_against(tdir)
+        self.assertTrue(svc.database_ok)
+        eng.bind.assert_called_once()
+
+    def test_mysql_rename_uses_backquotes(self):
+        """MySQL reads "desc" as a string, so it must be quoted `desc`."""
+        dbm = mock.Mock(table_name='archive')
+        dbm.connection.dbtype = 'mysql'
+        dbm.connection.columnsOf.return_value = ['dateTime', 'desc']
+        forecast.Forecast.rename_old_columns(dbm)
+        dbm.connection.execute.assert_called_once_with(
+            'ALTER TABLE archive RENAME COLUMN `desc` TO description')
+
+
+class URLOverrideTest(unittest.TestCase):
+    """A url set in weewx.conf is a base, not an all-or-nothing switch.
+
+    Before 5.4 the download parameters were added only when the url was left
+    at its default, so a user who pointed a source at a moved endpoint got a
+    bare URL with no key, no location and no format, and had to edit
+    forecast.py to change an endpoint at all.
+    """
+
+    def test_nws_appends_the_forecast_office(self):
+        # The default already carries a query string, so issuedby joins it.
+        self.assertEqual(
+            forecast.NWSBuildURL('BOX'),
+            forecast.NWS_DEFAULT_PFM_URL + '&issuedby=BOX')
+        # A base URL with no query string gets one.
+        self.assertEqual(
+            forecast.NWSBuildURL('BOX', 'https://example.com/pfm'),
+            'https://example.com/pfm?issuedby=BOX')
+        # A url that already names an office is left exactly as written.
+        explicit = 'https://example.com/pfm?issuedby=GYX&format=txt'
+        self.assertEqual(forecast.NWSBuildURL('BOX', explicit), explicit)
+
+    def test_wwo_default_is_the_surviving_endpoint(self):
+        """World Weather Online retired free/v2; it answers 403 now."""
+        self.assertEqual(
+            forecast.WWOForecast.DEFAULT_URL,
+            'https://api.worldweatheronline.com/premium/v1/weather.ashx')
+
+    def test_aeris_base_url_with_or_without_trailing_slash(self):
+        for base in ['https://example.com/forecasts',
+                     'https://example.com/forecasts/']:
+            url = forecast.AerisForecast.build_url(
+                'ID', 'SECRET', 'seattle,wa', '1hr', base)
+            self.assertTrue(
+                url.startswith('https://example.com/forecasts/seattle,wa?'),
+                url)
+
+    def test_wu_base_url_gets_exactly_one_slash(self):
+        for base in ['https://example.com', 'https://example.com/']:
+            with mock.patch.object(forecast.urllib.request, 'urlopen',
+                                   side_effect=OSError('offline')) as op:
+                forecast.WUForecast.download('KEY', 'geocode=1,2', url=base,
+                                             max_tries=1)
+            self.assertTrue(op.call_args[0][0].startswith(
+                'https://example.com/v3/wx/forecast/'), op.call_args[0][0])
+
+    def test_wwo_appends_parameters_to_a_base_url(self):
+        url = forecast.WWOForecast.build_url(
+            'KEY', 'Boston', 3, 'https://example.com/weather.ashx')
+        self.assertTrue(url.startswith('https://example.com/weather.ashx?'))
+        self.assertIn('key=KEY', url)
+        self.assertIn('q=Boston', url)
+
+    def _ds_request_url(self, url):
+        """The URL DSForecast.download() asks for, without a network."""
+        with mock.patch.object(forecast.urllib.request, 'urlopen',
+                               side_effect=OSError('offline')), \
+                mock.patch.object(forecast.urllib.request, 'Request',
+                                  wraps=forecast.urllib.request.Request) as req:
+            forecast.DSForecast.download('KEY', '42.36,-71.06', url=url,
+                                         max_tries=1)
+        return req.call_args[0][0]
+
+    def test_ds_appends_key_and_location_to_a_base_url(self):
+        u = self._ds_request_url('https://example.com/forecast')
+        self.assertTrue(
+            u.startswith('https://example.com/forecast/KEY/42.36,-71.06?'))
+
+    def test_ds_full_url_without_a_query_string_is_used_verbatim(self):
+        """Pirate Weather puts the key in the path, so a complete URL may
+        have no '?'.  Appending to it again would 404 every cycle."""
+        full = 'https://example.com/forecast/KEY/42.36,-71.06'
+        self.assertEqual(self._ds_request_url(full), full)
+
+    def test_a_url_with_a_query_string_is_used_verbatim(self):
+        hand_built = 'https://example.com/weather.ashx?key=K&q=Boston'
+        self.assertEqual(
+            forecast.WWOForecast.build_url('KEY', 'Nowhere', 3, hand_built),
+            hand_built)
+
+
+class XTideUnitsTest(unittest.TestCase):
+    """tide is always told its units.
+
+    Without -u, a units preference saved in the weewx user's ~/.xtide.xml
+    switches tide's output to meters.  parse() converts meters back to feet,
+    but tide rounds meters to two decimals, so levels drifted by up to about
+    0.015 ft.
+    """
+
+    def test_command_carries_feet_by_default(self):
+        done = mock.Mock(returncode=0, stdout='', stderr='')
+        with mock.patch.object(forecast.subprocess, 'run',
+                               return_value=done) as run:
+            forecast.XTideForecast.generate('Tenants Harbor', prog='tide')
+        cmd = run.call_args[0][0]
+        self.assertIn('-u', cmd)
+        self.assertEqual(cmd[cmd.index('-u') + 1], 'ft')
+
+    def test_a_metric_preference_does_not_reach_the_output(self):
+        prog = find_tide()
+        if prog is None:
+            self.skipTest('xtide is not installed')
+        with tempfile.TemporaryDirectory() as home:
+            with open(os.path.join(home, '.xtide.xml'), 'w') as f:
+                f.write('<?xml version="1.0"?>\n<xtideoptions u="m"/>\n')
+            sts = time.mktime(time.strptime('2013-08-20 12:00',
+                                            '%Y-%m-%d %H:%M'))
+            with mock.patch.dict(os.environ, {'HOME': home}):
+                lines = forecast.XTideForecast.generate(
+                    'Palo Alto Yacht Harbor', sts=sts, ets=sts + 86400,
+                    prog=prog)
+        # Palo Alto is in the free harmonics, so no output is a failure.
+        self.assertIsNotNone(lines)
+        actual = ''.join(lines)
+        self.assertIn('7.48 ft,"High Tide"', actual)
+        self.assertNotIn(' m,', actual)
+
+
+class ObfuscateTest(unittest.TestCase):
+    """A masked credential keeps its last four characters, and the mask is
+    capped: a UKMO key is a JWT over a thousand characters long, and a
+    full-length mask filled the startup log."""
+
+    def test_short_key_is_masked_to_its_length(self):
+        self.assertEqual(forecast.Forecast.obfuscate('abcdefgh'), 'XXXXefgh')
+
+    def test_long_key_mask_is_capped(self):
+        masked = forecast.Forecast.obfuscate('k' * 1200 + 'tail')
+        self.assertEqual(masked, 'X' * 28 + 'tail')
+
+    def test_url_mask_follows_the_same_rule(self):
+        key = 'k' * 1200 + 'tail'
+        self.assertEqual(
+            forecast.Forecast.get_masked_url(
+                'https://example.com/f?key=%s&q=x' % key, key),
+            'https://example.com/f?key=%s&q=x' % ('X' * 28 + 'tail'))
+        self.assertEqual(
+            forecast.Forecast.get_masked_url('https://example.com/f', ''),
+            'https://example.com/f')
 
 
 # use this to run individual tests while debugging

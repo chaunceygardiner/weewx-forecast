@@ -58,7 +58,9 @@ at startup naming what is missing, never binds, and does no work thereafter.
   → [Configuration](https://chaunceygardiner.github.io/weewx-forecast/configuration.html)
 
 - **One normalized database** for all nine sources, so a template that reads
-  NWS reads Pirate Weather the same way.
+  NWS reads Pirate Weather the same way.  It lives in SQLite by default, or in
+  MySQL or MariaDB.
+  → [Where the data goes](https://chaunceygardiner.github.io/weewx-forecast/configuration.html#where-the-data-goes)
 
 - **A search list extension** giving reports `$forecast.weather_periods('NWS')`,
   `$forecast.weather_summary('NWS')`, `$forecast.zambretti.code`,

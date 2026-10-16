@@ -14,9 +14,20 @@ what is particular to each.
 
 The seven downloading sources also accept `url` (to override the service
 endpoint) and `max_tries` (default `3`, how many times to retry a download).
-You should rarely need either.  Zambretti and XTide read neither — they
-generate rather than download, so setting those under `[[Zambretti]]` or
-`[[XTide]]` does nothing.
+You should rarely need either.  A `url` you set is treated as a base: the API
+key, location and other download parameters are appended to it, which is what
+you want when a service simply moves its endpoint.  If your `url` already
+carries a query string, it is used exactly as written and nothing is added —
+that is the escape hatch for hand-building a request.
+
+Two sources differ.  NWS's endpoint always carries a query string, so the
+forecast office (`issuedby=`, from your `foid`) is still appended unless your
+`url` already names one.  Pirate Weather (DS) carries the key and location in
+the path rather than the query string, so a DS `url` that already holds your
+API key is used exactly as written.
+
+Zambretti and XTide read neither — they generate rather than download, so
+setting those under `[[Zambretti]]` or `[[XTide]]` does nothing.
 
 ## No account required
 
@@ -49,11 +60,11 @@ To find yours, look up your forecast office identifier, then request a point
 forecast in a browser:
 
 ```
-http://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
+https://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
 ```
 
 Scan the output for the location identifier matching your location.  There is a
-lookup at <http://www.nws.noaa.gov/oh/hads/USGS/>.
+lookup at <https://hads.ncep.noaa.gov/USGS/>.
 
 {: .note }
 > Some forecast documents list the same `lid` twice.  If yours does and the
@@ -113,6 +124,14 @@ Requires xtide and its harmonics data — see
 
 Station names usually contain commas; that is expected and handled.  Copy the
 name exactly as `tide -ml` prints it.
+
+{: .note }
+> The harmonics data packaged for Debian and Raspberry Pi OS (`xtide-data`)
+> covers US waters and a handful of western Pacific stations, and nothing in
+> Europe: most European countries restrict their hydrographic data, so it
+> cannot be redistributed with xtide.  If `tide -ml` does not list a station
+> near you, XTide has no data for your coast rather than a fault — you will
+> need a harmonics file covering it before this source can do anything.
 
 {: .important }
 > Tide forecasts require Python 3.7 or later.  On an older Python this source
@@ -215,7 +234,12 @@ Aeris Weather.  Obtain a client id and client secret at
 ### WWO
 
 World Weather Online.  Register at
-<https://developer.worldweatheronline.com/auth/register>.
+<https://www.worldweatheronline.com/weather-api/>.
+
+{: .note }
+> World Weather Online retired its old `free/v2` endpoint, which now answers
+> every request with 403.  The default `url` is the `premium/v1` endpoint,
+> which accepts the key from a free WWO account as well as a paid one.
 
 ```
 [Forecast]

@@ -1,4 +1,5 @@
 ## forecast strip chart - Copyright 2012-2016 Matthew Wall
+## Copyright 2020-2026 John A Kline (john@johnkline.com)
 ## $Id: forecast_strip.inc 1745 2017-09-21 03:54:21Z mwall $
 #set $forecast_strip_version = 0.3
 ##
@@ -41,7 +42,7 @@
 #set $t0 = time.time()
 
 ## Which forecasts should be displayed?
-#set $strip_source = 'UKMO'
+#set $strip_source = 'NWS'
 
 ## How many forecast periods should be considered?
 ## Up to 40 for NWS, up to 12 for WU.  More periods take longer to generate.

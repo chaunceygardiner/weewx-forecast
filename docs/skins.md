@@ -23,6 +23,21 @@ Each begins with a block of variables controlling what it displays — which
 source to read, how many periods to show, which rows appear.  Edit those at the
 top of the file rather than the markup below.
 
+All four read NWS unless you choose otherwise.  (Before 5.4 they read UKMO,
+whatever you had configured.)  To choose a source without editing an include,
+set it in the forecast skin's `skin.conf`, under the layout's own subsection of
+`[Extras]`:
+
+```
+[Extras]
+    [[forecast_table_settings]]
+        source = OWM
+```
+
+The other layouts read `[[forecast_strip_settings]]`,
+`[[forecast_iconic_settings]]` and `[[forecast_compact_settings]]`.  Any of the
+variables at the top of an include can be set the same way.
+
 The skin also ships the icon set: cloud cover, storms, rain, snow, sleet,
 freezing rain, hail and the rest.
 
@@ -106,7 +121,6 @@ translation.
 | `PA` | Patchy | `PAq` | `<25%` |
 | `AR` | Areas | `ARq` | `25-50%` |
 | `WD` | Widespread | `WDq` | `>50%` |
-
 | `SC` | Scattered | `SCq` | `30-50%` |
 
 {: .important }

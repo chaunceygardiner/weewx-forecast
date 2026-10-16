@@ -21,12 +21,19 @@ XTide: interval=1209600 max_age=2419200 location='Boston, Boston Harbor, Massach
 API keys are obfuscated in these lines, so they are safe to paste when asking
 for help.
 
-### "forecast will not be run"
+### "not configured ... no forecasts will be made"
 
-A source logs this, preceded by a line naming what is missing, when it cannot
-start — a placeholder API key, no location, no `lid`.  It then does nothing at
-all for the life of the process: it never binds, so the message appears **once**
-at startup and never repeats, and the source costs nothing on any archive cycle.
+A source logs this once, at info level, when you have not filled in its stanza —
+a placeholder API key, no location, no `lid` — and the parentheses name what is
+missing:
+
+```
+NWS: not configured (location ID (lid) is not specified); no NWS forecasts will be made
+```
+
+It is not an error.  The source then does nothing at all for the life of the
+process: it never binds, so the message appears **once** at startup and never
+repeats, and the source costs nothing on any archive cycle.
 
 This is the expected state for every source you have not configured, because the
 installer enables all nine.  To silence them, remove the ones you do not use from
@@ -45,11 +52,12 @@ other seven sources continue to work; only these two decline.  See
 
 Check, in order:
 
-1. The source logged its startup line and *not* "forecast will not be run".
+1. The source logged its startup line, not "not configured", and no error.
 2. `search_list_extensions = user.forecast.ForecastVariables` is set for that
    report — see [Configuration](configuration.md#making-forecasts-available-to-reports).
 3. The database has rows.  `sqlite3 archive/forecast.sdb "select method, count(*) from archive group by method;"`
-   shows what each source has actually written.
+   shows what each source has actually written.  (On MySQL, run the same query
+   against the `forecast` database.)
 4. Enough time has passed for the source's `interval` to have elapsed at least
    once.
 

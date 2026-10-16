@@ -96,15 +96,24 @@ All nine sources write into a single table in a database of their own:
 [Databases]
     [[forecast_sqlite]]
         database_type = SQLite
-        database_name = archive/forecast.sdb
+        database_name = forecast.sdb
 ```
 
-For MySQL, point the binding at a `forecast_mysql` database instead:
+The file lands in WeeWX's `SQLITE_ROOT`, the `archive` directory on most
+installs.
+
+For MySQL or MariaDB (supported as of 5.4, and tested against MySQL 8.4 and
+MariaDB 11.8 in their default strict mode; earlier releases could not create
+the forecast table there), add a database and point the binding at it:
 
 ```
+[DataBindings]
+    [[forecast_binding]]
+        database = forecast_mysql
+
 [Databases]
     [[forecast_mysql]]
-        database_type = MySql
+        database_type = MySQL
         database_name = forecast
 ```
 
@@ -115,6 +124,21 @@ database management simple, and it keeps the number of template variables down.
 
 Every record carries `method`, `event_ts` (when the forecast is *for*) and
 `issued_ts` (when the source issued it), whatever its source.
+
+Two columns were renamed in 5.4: the text description is `description`
+(formerly `desc`, reserved in MySQL and MariaDB) and the tide level is
+`tide_offset` (formerly `offset`, reserved in MariaDB 10.6 and later).  An
+existing sqlite database is renamed in place the first time weewxd starts,
+which needs sqlite 3.25 or later.  Templates may still use `$period.desc` and
+`$tide.offset`.
+
+The rename is one way: 5.3 and earlier will not start against the renamed
+table.  To go back to an earlier release, first rename the columns back:
+
+```
+sqlite3 archive/forecast.sdb 'ALTER TABLE archive RENAME COLUMN description TO "desc"'
+sqlite3 archive/forecast.sdb 'ALTER TABLE archive RENAME COLUMN tide_offset TO "offset"'
+```
 
 ## Making forecasts available to reports
 

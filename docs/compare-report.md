@@ -44,7 +44,7 @@ The scratch database is created under your `SQLITE_ROOT`.  A station configured
 for MySQL only, with no SQLite root, gets a process-stamped file in the system
 temporary directory instead.
 
-On WeeWX 5.5 and later the generator honours the shutdown flag WeeWX hands to
+On WeeWX 5.5 and later the generator honors the shutdown flag WeeWX hands to
 report generators, checking it while scanning the forecast database, while
 collecting data, and between plots — so stopping WeeWX partway through a report
 no longer waits for every plot to finish.  Earlier WeeWX releases have no such

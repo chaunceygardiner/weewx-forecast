@@ -1,6 +1,7 @@
 #errorCatcher Echo
 #encoding UTF-8
 ## forecast table - Copyright 2012-2016 Matthew Wall
+## Copyright 2020-2026 John A Kline (john@johnkline.com)
 ## $Id: forecast_table.inc 1745 2017-09-21 03:54:21Z mwall $
 #set $forecast_table_version = 0.6
 ##
@@ -26,7 +27,7 @@
 #set $t0 = time.time()
 
 ## Which forecasts should be displayed?
-#set $forecast_source = 'UKMO'
+#set $forecast_source = 'NWS'
 
 ## How many forecast periods should be considered?
 ## Up to 40 for NWS, up to 240 for WU.  More periods take longer to generate.

@@ -66,7 +66,8 @@ CONFIG = """
         # US National Weather Service location (lid) and forecast office
         # (foid) identifiers.  Find your foid, then request a point forecast
         # matrix in a browser and scan it for your lid:
-        #     http://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
+        #     https://forecast.weather.gov/product.php?site=NWS&product=PFM&format=txt&issuedby=YOUR_THREE_LETTER_FOID
+        # There is also a lookup at https://hads.ncep.noaa.gov/USGS/
         lid = "INSERT_LOCATION_ID_HERE (e.g., MAZ014)"
         foid = "INSERT_FORECAST_OFFICE_ID_HERE (e.g., BOX)"
 
@@ -94,7 +95,8 @@ CONFIG = """
         client_secret = INSERT_AERIS_CLIENT_SECRET_HERE
 
     [[WWO]]
-        # World Weather Online API key.
+        # World Weather Online API key (a free account's key works):
+        #     https://www.worldweatheronline.com/weather-api/
         api_key = INSERT_WWO_API_KEY_HERE
 
     [[DS]]
@@ -138,7 +140,7 @@ def loader():
 class ForecastInstaller(ExtensionInstaller):
     def __init__(self):
         super(ForecastInstaller, self).__init__(
-            version="5.3",
+            version="5.4",
             name='forecast',
             description='Generate and display weather and tide forecasts.',
             author="Matthew Wall",

@@ -1,4 +1,5 @@
 ## forecast compact - Copyright 2016 Matthew Wall
+## Copyright 2020-2026 John A Kline (john@johnkline.com)
 ## $Id: forecast_compact.inc 1745 2017-09-21 03:54:21Z mwall $
 #set $forecast_compact_version = 0.1
 ##
@@ -24,7 +25,7 @@
 #set $t0 = time.time()
 
 ## Which forecast should be displayed?
-#set $forecast_source = 'UKMO'
+#set $forecast_source = 'NWS'
 
 ## How many days should be considered?
 #set $num_days = 7
